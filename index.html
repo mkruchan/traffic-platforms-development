@@ -328,6 +328,47 @@ tr.drag-drop-after  td { box-shadow: inset 0 -2px 0 0 var(--accent); }
 .mt-body { font-size:12.5px; line-height:1.65; color:var(--text-secondary); white-space:pre-wrap; }
 .mt-body strong { color:var(--text-primary); }
 
+/* ═══ INSIGHT CARDS (traffic + creative) ═══ */
+.ins-entry { border-bottom:1px solid var(--border-light); padding:16px 20px; }
+.ins-entry:last-child { border-bottom:none; }
+.ins-head { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+.ins-title { font-size:13.5px; font-weight:600; }
+.ins-date { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.ins-body { font-size:12.5px; line-height:1.65; color:var(--text-secondary); white-space:pre-wrap; margin-bottom:10px; }
+.ins-media-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.ins-thumb { position:relative; width:84px; height:84px; border-radius:8px; overflow:hidden; cursor:pointer;
+  border:1px solid var(--border-light); background:var(--bg-tertiary); flex-shrink:0; transition:transform .15s; }
+.ins-thumb:hover { transform:scale(1.04); box-shadow:var(--shadow-md); }
+.ins-thumb img, .ins-thumb video { width:100%; height:100%; object-fit:cover; display:block; }
+.ins-thumb .ins-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.28); color:#fff; }
+.ins-thumb .ins-remove { position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%;
+  background:rgba(0,0,0,.55); color:#fff; display:flex; align-items:center; justify-content:center;
+  border:none; cursor:pointer; opacity:0; transition:opacity .15s; z-index:2; }
+.ins-thumb:hover .ins-remove { opacity:1; }
+.ins-add-media { width:84px; height:84px; border-radius:8px; border:1.5px dashed var(--border-mid);
+  background:var(--bg-secondary); display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; color:var(--text-muted); cursor:pointer; flex-shrink:0; font-size:10px; font-weight:600; transition:all .15s; }
+.ins-add-media:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-muted); }
+
+/* ═══ LIGHTBOX ═══ */
+.lightbox-overlay { position:fixed; inset:0; background:rgba(10,10,12,.94); z-index:10000;
+  display:flex; align-items:center; justify-content:center; padding:40px; }
+.lightbox-overlay.hidden { display:none; }
+.lightbox-content { max-width:min(1100px,90vw); max-height:82vh; display:flex; align-items:center; justify-content:center; }
+.lightbox-content img, .lightbox-content video { max-width:100%; max-height:82vh; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.lightbox-caption { position:absolute; bottom:28px; left:0; right:0; text-align:center; color:rgba(255,255,255,.85); font-size:13px; }
+.lightbox-close { position:absolute; top:20px; right:24px; width:40px; height:40px; border-radius:50%;
+  background:rgba(255,255,255,.1); color:#fff; border:none; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:background .15s; }
+.lightbox-close:hover { background:rgba(255,255,255,.2); }
+.lightbox-nav { position:absolute; top:50%; transform:translateY(-50%); width:48px; height:48px; border-radius:50%;
+  background:rgba(255,255,255,.1); color:#fff; border:none; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:background .15s; }
+.lightbox-nav:hover { background:rgba(255,255,255,.2); }
+.lightbox-nav.prev { left:20px; } .lightbox-nav.next { right:20px; }
+.lightbox-counter { position:absolute; top:26px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,.6); font-size:12px; font-weight:600; }
+
 /* ═══ EMPTY STATE ═══ */
 .empty { padding:40px 24px; text-align:center; color:var(--text-muted); }
 .empty-title { font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:4px; }
@@ -533,6 +574,22 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
 </div>
 
 <div class="toast-container" id="toasts"></div>
+
+<!-- ══════════════ LIGHTBOX ══════════════ -->
+<div class="lightbox-overlay hidden" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l12 12M14 2L2 14"/></svg>
+  </button>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+  <button class="lightbox-nav prev" id="lightbox-prev" onclick="lightboxNav(-1)" aria-label="Previous">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3l-5 5 5 5"/></svg>
+  </button>
+  <div class="lightbox-content" id="lightbox-content"></div>
+  <button class="lightbox-nav next" id="lightbox-next" onclick="lightboxNav(1)" aria-label="Next">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+  </button>
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+</div>
 <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(this)">
 <script>
 /* ═══════════════════════════════════════════════════════════════
@@ -687,7 +744,8 @@ function seedPlatform(o){
     strategy:{ objective:'', whyFit:'', verticals:'', geos:'', spendTarget:'', minDeposit:'',
                payment:'', tracking:'', formats:'', constraints:'', spyNotes:'' },
     stages: STAGE_TEMPLATE.map((s,i)=>({ id:uid(), label:s[0], hint:s[1], note:'', done:false })),
-    kpis: [], actions: [], meetings: [], offers: [], research: [], notes:''
+    kpis: [], actions: [], meetings: [], offers: [], research: [],
+    trafficInsights: [], creativeInsights: [], notes:''
   }, o);
 }
 
@@ -850,7 +908,7 @@ function load(){
   S.platforms.forEach(p => {
     const base = seedPlatform({});
     ['poc','strategy'].forEach(k => p[k] = Object.assign({}, base[k], p[k]||{}));
-    ['stages','kpis','actions','meetings','offers','research'].forEach(k => { if(!Array.isArray(p[k])) p[k]=[]; });
+    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights'].forEach(k => { if(!Array.isArray(p[k])) p[k]=[]; });
     if (!p.stages.length) p.stages = base.stages;
     if (!p.fg) p.fg = '#ffffff';
     if (p.logoKey===undefined) p.logoKey = '';
@@ -966,6 +1024,14 @@ function researchUrl(slug){
   return slug ? base + '/' + String(slug).replace(/^\/+/,'') : base;
 }
 
+function mediaImgError(img){
+  const ph = document.createElement('div');
+  ph.className = 'ins-play';
+  ph.style.cssText = 'position:static;background:none;color:var(--text-muted);width:100%;height:100%';
+  ph.title = 'Could not load this file';
+  ph.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+  img.replaceWith(ph);
+}
 function toast(msg, kind){
   const c = document.getElementById('toasts');
   const t = document.createElement('div');
@@ -1184,6 +1250,8 @@ function renderPlatform(){
 
   const tabs = [
     ['overview','Overview',''],
+    ['traffic','Traffic insights', p.trafficInsights.length||''],
+    ['creative','Creative insights', p.creativeInsights.length||''],
     ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
     ['offers','Offers & tests', p.offers.length||''],
     ['actions','Action items', t.openActions||''],
@@ -1235,6 +1303,8 @@ function setTab(t){ curTab=t; renderPlatform(); }
 function renderTab(){
   const p = P(curPid), el = document.getElementById('tab-content');
   if (curTab==='overview') el.innerHTML = tabOverview(p);
+  if (curTab==='traffic')  el.innerHTML = tabTrafficInsights(p);
+  if (curTab==='creative') el.innerHTML = tabCreativeInsights(p);
   if (curTab==='plan')     el.innerHTML = tabPlan(p);
   if (curTab==='offers')   el.innerHTML = tabOffers(p);
   if (curTab==='actions')  el.innerHTML = tabActions(p);
@@ -1333,6 +1403,70 @@ function tabOverview(p){
         </div>
       </div>
     </div>
+  </div>`;
+}
+
+function insightCard(p, kind, ins){
+  const isCreative = kind === 'creative';
+  return `<div class="ins-entry" ${dragAttrs(p.id, kind==='creative'?'creativeInsights':'trafficInsights', ins.id)}>
+    <div class="ins-head">
+      <span class="drag-handle" title="Drag to reorder" style="margin-top:1px">${dragHandleSvg}</span>
+      <div style="flex:1;min-width:0">
+        <div class="ins-title">${esc(ins.title||'Untitled')}</div>
+        ${ins.date?`<div class="ins-date">${niceDate(ins.date)}</div>`:''}
+      </div>
+      <div class="row-actions">
+        <button class="icon-btn" onclick="${isCreative?'editCreativeInsight':'editTrafficInsight'}('${p.id}','${ins.id}')" title="Edit">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+        <button class="icon-btn danger" onclick="${isCreative?'delCreativeInsight':'delTrafficInsight'}('${p.id}','${ins.id}')" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+      </div>
+    </div>
+    ${ins.body?`<div class="ins-body">${esc(ins.body)}</div>`:''}
+    ${isCreative ? `<div class="ins-media-grid">
+      ${(ins.media||[]).map((m,i)=>`
+        <div class="ins-thumb" onclick="openLightbox('${p.id}','${ins.id}',${i})">
+          ${m.type==='video'
+            ? `<video src="${esc(m.url)}" preload="metadata" muted></video><div class="ins-play"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
+            : `<img src="${esc(m.url)}" alt="${esc(m.caption||'')}" loading="lazy" onerror="mediaImgError(this)">`}
+          <button class="ins-remove" onclick="event.stopPropagation();delCreativeMedia('${p.id}','${ins.id}','${m.id}')" title="Remove">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
+        </div>`).join('')}
+      <div class="ins-add-media" onclick="addCreativeMedia('${p.id}','${ins.id}')" title="Add image or video">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        Add
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+function tabTrafficInsights(p){
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg></div>
+      <div><h2>Traffic insights</h2><div class="sh-sub">What you're learning about this platform's traffic, audience, and delivery</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editTrafficInsight('${p.id}')">+ Add insight</button></div>
+    </div>
+    <div class="section-body flush">${p.trafficInsights.length
+      ? p.trafficInsights.map(ins=>insightCard(p,'traffic',ins)).join('')
+      : `<div class="empty"><div class="empty-title">No traffic insights yet</div>
+        <div class="empty-sub">Log what you're noticing about delivery, audience behavior, placement quality, fraud/quality signals, or anything a teammate should know before they run an offer here.</div>
+        <button class="toolbar-btn primary" onclick="editTrafficInsight('${p.id}')">Add the first insight</button></div>`}</div>
+  </div>`;
+}
+
+function tabCreativeInsights(p){
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-coral"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+      <div><h2>Creative insights</h2><div class="sh-sub">Winning angles, creative learnings, and reference examples for this platform</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editCreativeInsight('${p.id}')">+ Add insight</button></div>
+    </div>
+    <div class="section-body flush">${p.creativeInsights.length
+      ? p.creativeInsights.map(ins=>insightCard(p,'creative',ins)).join('')
+      : `<div class="empty"><div class="empty-title">No creative insights yet</div>
+        <div class="empty-sub">Add what's working creatively — angles, hooks, formats — with example images or video attached. Click any thumbnail to view it full screen.</div>
+        <button class="toolbar-btn primary" onclick="editCreativeInsight('${p.id}')">Add the first insight</button></div>`}</div>
   </div>`;
 }
 
@@ -1893,7 +2027,7 @@ function importJSON(input){
 function load2(){
   S.platforms.forEach(p=>{ const base = seedPlatform({});
     ['poc','strategy'].forEach(k=>p[k]=Object.assign({},base[k],p[k]||{}));
-    ['stages','kpis','actions','meetings','offers','research'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
+    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
   if (!S.brandingMigratedV2) {
     S.platforms.forEach(p=>{ const b = BRAND_DEFAULTS[p.name]; if (b) Object.assign(p, b); });
     S.brandingMigratedV2 = true;
@@ -2029,7 +2163,13 @@ function openModal({title, sub, icon, body, footer, wide}){
   setTimeout(()=>{ const f = document.querySelector('#modal-body input:not([type=hidden]), #modal-body textarea, #modal-body select'); if(f) f.focus(); },40);
 }
 function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('keydown', e=>{
+  if (e.key==='Escape'){ closeLightbox(); closeModal(); }
+  if (_lightbox){
+    if (e.key==='ArrowRight') lightboxNav(1);
+    if (e.key==='ArrowLeft') lightboxNav(-1);
+  }
+});
 
 const V = id => (document.getElementById(id)?.value ?? '').trim();
 function fld(label, id, val, opts){
@@ -2338,6 +2478,120 @@ function delResearch(pid, rid){
   confirmModal('Remove this link?', `“${esc(r.label||r.slug)}” will no longer show on ${esc(P(pid).name)}.`, 'Remove', ()=>{
     P(pid).research = P(pid).research.filter(x=>x.id!==rid); save(); renderPlatform(); toast('Research link removed');
   }, true);
+}
+
+/* ═══════════════ TRAFFIC INSIGHTS ═══════════════ */
+function editTrafficInsight(pid, id){
+  const ins = id ? P(pid).trafficInsights.find(x=>x.id===id) : { title:'', date:today(), body:'' };
+  openModal({ title: id?'Edit insight':'Add traffic insight', sub:P(pid).name, icon:'icon-blue', wide:true,
+    body:`<div class="grid-2">
+        ${fld('Title','f-ti-title',ins.title,{ph:'e.g. Weekend delivery drops sharply'})}
+        ${fld('Date','f-ti-date',ins.date,{type:'date'})}
+      </div>
+      ${fld('Details','f-ti-body',ins.body,{type:'textarea',style:'min-height:130px',ph:'What did you notice? Audience behavior, delivery patterns, placement quality, fraud/quality signals…'})}`,
+    footer: ftr(`saveTrafficInsight('${pid}',${id?`'${id}'`:'null'})`,
+      id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delTrafficInsight('${pid}','${id}')">Delete</button>`:'') });
+}
+function saveTrafficInsight(pid, id){
+  const title = V('f-ti-title'); if(!title){ toast('Give it a title','error'); return; }
+  const d = { title, date:V('f-ti-date'), body:V('f-ti-body') };
+  const p = P(pid);
+  if (id) Object.assign(p.trafficInsights.find(x=>x.id===id), d);
+  else p.trafficInsights.push(Object.assign({id:uid()}, d));
+  save(); closeModal(); renderPlatform(); toast(id?'Insight updated':'Insight added','success');
+}
+function delTrafficInsight(pid, id){
+  const ins = P(pid).trafficInsights.find(x=>x.id===id);
+  confirmModal('Delete this insight?', `“${esc(ins.title||'Untitled')}” will be removed.`, 'Delete', ()=>{
+    P(pid).trafficInsights = P(pid).trafficInsights.filter(x=>x.id!==id); save(); renderPlatform(); toast('Insight deleted');
+  }, true);
+}
+
+/* ═══════════════ CREATIVE INSIGHTS ═══════════════ */
+function editCreativeInsight(pid, id){
+  const ins = id ? P(pid).creativeInsights.find(x=>x.id===id) : { title:'', date:today(), body:'', media:[] };
+  openModal({ title: id?'Edit insight':'Add creative insight', sub:P(pid).name, icon:'icon-coral', wide:true,
+    body:`<div class="grid-2">
+        ${fld('Title','f-ci-title',ins.title,{ph:'e.g. UGC hook outperforms polished cut'})}
+        ${fld('Date','f-ci-date',ins.date,{type:'date'})}
+      </div>
+      ${fld('Details','f-ci-body',ins.body,{type:'textarea',style:'min-height:110px',ph:'What worked, why, what to reuse…'})}
+      ${id?`<div class="hint">Manage images and video from the card itself after saving — click "Add" in its media grid.</div>`:''}`,
+    footer: ftr(`saveCreativeInsight('${pid}',${id?`'${id}'`:'null'})`,
+      id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delCreativeInsight('${pid}','${id}')">Delete</button>`:'') });
+}
+function saveCreativeInsight(pid, id){
+  const title = V('f-ci-title'); if(!title){ toast('Give it a title','error'); return; }
+  const d = { title, date:V('f-ci-date'), body:V('f-ci-body') };
+  const p = P(pid);
+  if (id) Object.assign(p.creativeInsights.find(x=>x.id===id), d);
+  else p.creativeInsights.push(Object.assign({id:uid(), media:[]}, d));
+  save(); closeModal(); renderPlatform(); toast(id?'Insight updated':'Insight added','success');
+}
+function delCreativeInsight(pid, id){
+  const ins = P(pid).creativeInsights.find(x=>x.id===id);
+  const n = (ins.media||[]).length;
+  confirmModal('Delete this insight?', `“${esc(ins.title||'Untitled')}”${n?` and its ${n} attached file${n===1?'':'s'}`:''} will be removed.`, 'Delete', ()=>{
+    P(pid).creativeInsights = P(pid).creativeInsights.filter(x=>x.id!==id); save(); renderPlatform(); toast('Insight deleted');
+  }, true);
+}
+function guessMediaType(url){
+  return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url) ? 'video' : 'image';
+}
+function addCreativeMedia(pid, insightId){
+  openModal({ title:'Add image or video', sub:P(pid).name, icon:'icon-coral',
+    body: fld('Media URL','f-cm-url','',{ph:'https://res.cloudinary.com/…/angle-01.jpg',
+        hint:'A direct link to an image (jpg/png/gif/webp) or video file (mp4/webm). Type is detected from the file extension.'})
+      + fld('Caption (optional)','f-cm-caption','',{ph:'Short label for this file'}),
+    footer: ftr(`saveCreativeMedia('${pid}','${insightId}')`) });
+}
+function saveCreativeMedia(pid, insightId){
+  const url = V('f-cm-url'); if(!url){ toast('Paste a media URL','error'); return; }
+  const ins = P(pid).creativeInsights.find(x=>x.id===insightId);
+  if (!Array.isArray(ins.media)) ins.media = [];
+  ins.media.push({ id:uid(), type:guessMediaType(url), url, caption:V('f-cm-caption') });
+  save(); closeModal(); renderPlatform(); toast('Media added','success');
+}
+function delCreativeMedia(pid, insightId, mediaId){
+  const ins = P(pid).creativeInsights.find(x=>x.id===insightId);
+  ins.media = (ins.media||[]).filter(m=>m.id!==mediaId);
+  save(); renderPlatform(); toast('Removed');
+}
+
+/* ═══════════════ LIGHTBOX ═══════════════ */
+let _lightbox = null; // { pid, insightId, index }
+function openLightbox(pid, insightId, index){
+  _lightbox = { pid, insightId, index };
+  renderLightbox();
+  document.getElementById('lightbox').classList.remove('hidden');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.add('hidden');
+  document.getElementById('lightbox-content').innerHTML = ''; // stop any playing video
+  _lightbox = null;
+}
+function lightboxNav(dir){
+  if (!_lightbox) return;
+  const media = P(_lightbox.pid).creativeInsights.find(x=>x.id===_lightbox.insightId).media;
+  _lightbox.index = (_lightbox.index + dir + media.length) % media.length;
+  renderLightbox();
+}
+function renderLightbox(){
+  if (!_lightbox) return;
+  const ins = P(_lightbox.pid).creativeInsights.find(x=>x.id===_lightbox.insightId);
+  const media = ins.media || [];
+  if (!media.length) { closeLightbox(); return; }
+  if (_lightbox.index >= media.length) _lightbox.index = media.length - 1;
+  const m = media[_lightbox.index];
+  const content = document.getElementById('lightbox-content');
+  content.innerHTML = m.type==='video'
+    ? `<video src="${esc(m.url)}" controls autoplay></video>`
+    : `<img src="${esc(m.url)}" alt="${esc(m.caption||'')}">`;
+  document.getElementById('lightbox-caption').textContent = m.caption || ins.title || '';
+  document.getElementById('lightbox-counter').textContent = media.length>1 ? `${_lightbox.index+1} / ${media.length}` : '';
+  const showNav = media.length>1;
+  document.getElementById('lightbox-prev').style.display = showNav?'flex':'none';
+  document.getElementById('lightbox-next').style.display = showNav?'flex':'none';
 }
 
 /* ═══════════════ QUICK ADD / EXPORT ═══════════════ */
