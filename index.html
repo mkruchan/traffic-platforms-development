@@ -129,6 +129,10 @@ input, select, textarea, button { font-family:inherit; }
 .ds-hamburger { display:none; align-items:center; justify-content:center; width:32px; height:32px;
   border-radius:8px; border:1px solid var(--border-light); background:var(--bg-primary);
   color:var(--text-secondary); cursor:pointer; }
+.ds-hdr-collapse-btn { display:flex; align-items:center; justify-content:center; width:32px; height:32px;
+  border-radius:8px; border:1px solid var(--border-light); background:var(--bg-primary);
+  color:var(--text-secondary); cursor:pointer; flex-shrink:0; transition:all .15s cubic-bezier(.4,0,.2,1); }
+.ds-hdr-collapse-btn:hover { background:var(--bg-secondary); color:var(--text-primary); border-color:var(--border-mid); }
 .autosave-status { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted);
   white-space:nowrap; padding:0 6px; }
 .autosave-dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); flex-shrink:0;
@@ -378,12 +382,18 @@ select.inp { cursor:pointer; appearance:none;
 .ds-sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:550; }
 .ds-sidebar-overlay.open { display:block; }
 
+.ds-sidebar { transition: transform .25s cubic-bezier(.4,0,.2,1); }
+.ds-main { transition: margin-left .25s cubic-bezier(.4,0,.2,1); }
+body.sidebar-collapsed .ds-sidebar { transform: translateX(-100%); }
+body.sidebar-collapsed .ds-main { margin-left: 0; }
+
 @media (max-width:1024px) {
   .ds-sidebar { transform:translateX(-100%); transition:transform .25s cubic-bezier(.4,0,.2,1);
     width:260px; box-shadow:4px 0 24px rgba(0,0,0,.15); }
-  .ds-sidebar.open { transform:translateX(0); }
+  .ds-sidebar.open { transform:translateX(0) !important; }
   .ds-main { margin-left:0; }
   .ds-hamburger { display:flex; }
+  .ds-hdr-collapse-btn { display:none; }
   .container { padding:18px 18px 56px; }
   .ds-top-header { padding:0 18px; }
   .ds-top-header-subtitle { display:none; }
@@ -462,6 +472,9 @@ select.inp { cursor:pointer; appearance:none;
 <div class="ds-main">
   <div class="ds-top-header">
     <div class="ds-top-header-left">
+      <button class="ds-hdr-collapse-btn" onclick="toggleDesktopSidebar()" title="Toggle sidebar" aria-label="Toggle sidebar">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M6 1v14"/></svg>
+      </button>
       <button class="ds-hamburger" onclick="toggleSidebar()" aria-label="Menu">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
       </button>
@@ -717,7 +730,7 @@ let S = null, CONF = null, view = 'dashboard', curPid = null, curTab = 'overview
 function defaultConf(){
   return { owner:'Mykyta', team:'LiftIQ · Traffic Intelligence', currency:'USD',
     researchBase:'https://mkruchan.github.io/creative-research/',
-    everflowBase:'', sb:{ url:'', key:'', table:'tpd_state', row:'main' }, theme:'auto' };
+    everflowBase:'', sb:{ url:'', key:'', table:'tpd_state', row:'main' }, theme:'auto', sidebarCollapsed:false };
 }
 
 function load(){
@@ -860,6 +873,13 @@ function closeSidebar(){
   document.getElementById('ds-sidebar').classList.remove('open');
   document.getElementById('ds-sidebar-overlay').classList.remove('open');
 }
+function toggleDesktopSidebar(){
+  CONF.sidebarCollapsed = !CONF.sidebarCollapsed;
+  applySidebarState(); save(true);
+}
+function applySidebarState(){
+  document.body.classList.toggle('sidebar-collapsed', !!CONF.sidebarCollapsed);
+}
 
 /* ═══════════════ THEME ═══════════════ */
 function cycleTheme(){
@@ -895,9 +915,8 @@ function renderNav(){
   const wrap = document.getElementById('nav-platforms');
   wrap.innerHTML = S.platforms.map(p=>{
     const t = platformTotals(p);
-    const st = STATUS[p.status]||STATUS.prospecting;
     return `<button class="ds-nav-item" data-nav="pf-${p.id}" onclick="openPlatform('${p.id}')">
-      <span class="ds-nav-dot" style="background:${st.dot}"></span>
+      <span class="ds-nav-dot" style="background:${p.color}"></span>
       <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
       ${t.openActions?`<span class="nav-count">${t.openActions}</span>`:''}
     </button>`;
@@ -2136,6 +2155,7 @@ function openExport(){
 /* ═══════════════ INIT ═══════════════ */
 load();
 applyTheme();
+applySidebarState();
 render();
 dot('saved', cloudConfigured() ? 'Connecting…' : 'Saved locally');
 if (cloudConfigured()) initCloudSync();
