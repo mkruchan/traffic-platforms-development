@@ -1301,8 +1301,12 @@ function tabOverview(p){
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:.5;flex-shrink:0;margin-top:2px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
               <div class="ai-text"><a class="link" href="${esc(researchUrl(r.slug))}" target="_blank" rel="noopener">${esc(r.label||r.slug)}</a>
                 <div class="ai-tags"><span class="ai-tag">${esc(researchUrl(r.slug))}</span></div></div>
-              <div class="row-actions"><button class="icon-btn danger" onclick="delResearch('${p.id}','${r.id}')" title="Remove">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button></div>
+              <div class="row-actions">
+                <button class="icon-btn" onclick="editResearch('${p.id}','${r.id}')" title="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+                <button class="icon-btn danger" onclick="delResearch('${p.id}','${r.id}')" title="Remove">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+              </div>
             </div>`).join('')
           : `<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6">No research boards linked yet. Paste the slug from the Multi-Platform Creative Research tool — e.g. <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:4px">obd-fuel</code> — and it becomes a one-click jump.</div>`}
         </div>
@@ -2287,18 +2291,27 @@ function saveKpi(pid, kid){
 function delKpi(pid, kid){ P(pid).kpis = P(pid).kpis.filter(x=>x.id!==kid); save(); renderPlatform(); }
 
 /* ═══════════════ RESEARCH LINKS ═══════════════ */
-function editResearch(pid){
-  openModal({ title:'Link a research board', sub:P(pid).name, icon:'icon-purple',
-    body: fld('Label','f-rlabel','',{ph:'OBD Fuel — native angles'}) +
-          fld('Slug','f-rslug','',{ph:'obd-fuel',hint:`Resolves to ${esc(researchUrl('«slug»'))}`}),
-    footer: ftr(`saveResearch('${pid}')`) });
+function editResearch(pid, rid){
+  const r = rid ? P(pid).research.find(x=>x.id===rid) : { label:'', slug:'' };
+  openModal({ title: rid?'Edit research link':'Link a research board', sub:P(pid).name, icon:'icon-purple',
+    body: fld('Label','f-rlabel',r.label,{ph:'OBD Fuel — native angles'}) +
+          fld('Slug','f-rslug',r.slug,{ph:'obd-fuel',hint:`Resolves to ${esc(researchUrl('«slug»'))}`}),
+    footer: ftr(`saveResearch('${pid}',${rid?`'${rid}'`:'null'})`,
+      rid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delResearch('${pid}','${rid}')">Remove</button>`:'') });
 }
-function saveResearch(pid){
+function saveResearch(pid, rid){
   const slug = V('f-rslug'); if(!slug){ toast('Add the slug','error'); return; }
-  P(pid).research.push({ id:uid(), label:V('f-rlabel')||slug, slug });
-  save(); closeModal(); renderPlatform(); toast('Research board linked','success');
+  const d = { label:V('f-rlabel')||slug, slug };
+  if (rid) Object.assign(P(pid).research.find(x=>x.id===rid), d);
+  else P(pid).research.push(Object.assign({id:uid()}, d));
+  save(); closeModal(); renderPlatform(); toast(rid?'Research link updated':'Research board linked','success');
 }
-function delResearch(pid, rid){ P(pid).research = P(pid).research.filter(r=>r.id!==rid); save(); renderPlatform(); }
+function delResearch(pid, rid){
+  const r = P(pid).research.find(x=>x.id===rid);
+  confirmModal('Remove this link?', `“${esc(r.label||r.slug)}” will no longer show on ${esc(P(pid).name)}.`, 'Remove', ()=>{
+    P(pid).research = P(pid).research.filter(x=>x.id!==rid); save(); renderPlatform(); toast('Research link removed');
+  }, true);
+}
 
 /* ═══════════════ QUICK ADD / EXPORT ═══════════════ */
 function openQuickAdd(kind){
