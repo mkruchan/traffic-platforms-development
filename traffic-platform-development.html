@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Traffic Platform Development — LiftIQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+(function(){
+  var saved = localStorage.getItem('liftiq_tpd_theme');
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark) || (saved === 'auto' && prefersDark)) {
+    document.documentElement.classList.add('force-dark-early');
+    document.addEventListener('DOMContentLoaded', function(){ document.body.classList.add('force-dark'); });
+  } else if (saved === 'light') {
+    document.addEventListener('DOMContentLoaded', function(){ document.body.classList.add('force-light'); });
+  }
+})();
+</script>
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — inherited from Multi-Platform Creative Research
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary:#ffffff; --bg-secondary:#f9fafb; --bg-tertiary:#f5f7fa; --surface:#ffffff;
+  --text-primary:#111827; --text-secondary:#6b7280; --text-muted:#9ca3af;
+  --border-light:#e5e7eb; --border-mid:#d1d5db;
+  --accent:#2563eb; --accent-hover:#1d4ed8; --accent-muted:rgba(37,99,235,0.10);
+  --green-success:#16a34a;
+  --blue-bg:#EFF6FF;   --blue-text:#1e40af;
+  --teal-bg:#F0FDF4;   --teal-text:#166534;
+  --amber-bg:#FFFBEB;  --amber-text:#92400e;
+  --purple-bg:#F5F3FF; --purple-text:#5b21b6;
+  --coral-bg:#FFF1EE;  --coral-text:#9a3412;
+  --grey-bg:#F3F4F6;   --grey-text:#4b5563;
+  --radius-sm:4px; --radius-md:8px; --radius-lg:10px; --radius-xl:12px;
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:0 8px 28px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
+  --sidebar-w:236px;
+}
+body.force-dark, html.force-dark-early body {
+  --bg-primary:#18181b; --bg-secondary:#18181b; --bg-tertiary:#27272a; --surface:#18181b;
+  --text-primary:#f4f4f5; --text-secondary:#a1a1aa; --text-muted:#71717a;
+  --border-light:rgba(255,255,255,0.10); --border-mid:rgba(255,255,255,0.18);
+  --accent:#3b82f6; --accent-hover:#2563eb; --accent-muted:rgba(59,130,246,0.15);
+  --green-success:#22c55e;
+  --blue-bg:#1e3a5f;   --blue-text:#93c5fd;
+  --teal-bg:#14352b;   --teal-text:#6ee7b7;
+  --amber-bg:#3d2b0a;  --amber-text:#fcd34d;
+  --purple-bg:#2e1a4e; --purple-text:#c4b5fd;
+  --coral-bg:#3d150a;  --coral-text:#fca5a5;
+  --grey-bg:#27272a;   --grey-text:#a1a1aa;
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.2);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+}
+@media (prefers-color-scheme: dark) {
+  body:not(.force-light) {
+    --bg-primary:#18181b; --bg-secondary:#18181b; --bg-tertiary:#27272a; --surface:#18181b;
+    --text-primary:#f4f4f5; --text-secondary:#a1a1aa; --text-muted:#71717a;
+    --border-light:rgba(255,255,255,0.10); --border-mid:rgba(255,255,255,0.18);
+    --accent:#3b82f6; --accent-hover:#2563eb; --accent-muted:rgba(59,130,246,0.15);
+    --green-success:#22c55e;
+    --blue-bg:#1e3a5f; --blue-text:#93c5fd; --teal-bg:#14352b; --teal-text:#6ee7b7;
+    --amber-bg:#3d2b0a; --amber-text:#fcd34d; --purple-bg:#2e1a4e; --purple-text:#c4b5fd;
+    --coral-bg:#3d150a; --coral-text:#fca5a5; --grey-bg:#27272a; --grey-text:#a1a1aa;
+  }
+}
+::-webkit-scrollbar { width:8px; height:8px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border-mid); border-radius:99px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+
+body {
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  background:var(--bg-primary); color:var(--text-primary);
+  min-height:100vh; font-size:13px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+input, select, textarea, button { font-family:inherit; }
+
+/* ═══ SIDEBAR ═══ */
+.ds-sidebar {
+  width:var(--sidebar-w); flex-shrink:0; background:var(--bg-primary);
+  border-right:1px solid var(--border-light);
+  display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0;
+  z-index:600; overflow-y:auto; overflow-x:hidden;
+}
+.ds-sidebar-logo { display:flex; align-items:center; gap:10px; padding:0 18px; height:72px;
+  border-bottom:1px solid var(--border-light); flex-shrink:0; }
+.ds-sidebar-nav { flex:1; padding:10px 8px; display:flex; flex-direction:column; gap:1px; }
+.ds-nav-section { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-muted); padding:14px 10px 6px; }
+.ds-nav-item {
+  display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px;
+  font-size:13px; font-weight:500; color:var(--text-secondary); cursor:pointer;
+  border:none; background:none; width:100%; text-align:left;
+  transition:all .16s cubic-bezier(.4,0,.2,1); white-space:nowrap; overflow:hidden;
+}
+.ds-nav-item:hover { background:var(--bg-tertiary); color:var(--text-primary); }
+.ds-nav-item.active { background:var(--blue-bg); color:var(--blue-text); font-weight:600; }
+.ds-nav-item svg { flex-shrink:0; opacity:.6; width:16px; height:16px; }
+.ds-nav-item .nav-count { margin-left:auto; font-size:10px; font-weight:600; color:var(--text-muted);
+  background:var(--bg-tertiary); border-radius:20px; padding:1px 7px; }
+.ds-nav-item.active .nav-count { background:rgba(37,99,235,.14); color:var(--blue-text); }
+.ds-nav-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-left:1px; }
+.ds-sidebar-footer { border-top:1px solid var(--border-light); padding:8px; }
+
+/* ═══ MAIN + HEADER ═══ */
+.ds-main { margin-left:var(--sidebar-w); display:flex; flex-direction:column; min-height:100vh; overflow-x:hidden; }
+.ds-top-header {
+  display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px;
+  padding:0 32px; height:72px; background:var(--bg-primary);
+  border-bottom:1px solid var(--border-light); position:sticky; top:0; z-index:100; width:100%;
+}
+.ds-top-header-left { min-width:0; display:flex; align-items:center; gap:10px; }
+.ds-top-header-title { font-size:20px; font-weight:700; letter-spacing:-.3px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.ds-top-header-subtitle { font-size:13px; color:var(--text-secondary); margin:2px 0 0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ds-top-header-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.ds-hamburger { display:none; align-items:center; justify-content:center; width:32px; height:32px;
+  border-radius:8px; border:1px solid var(--border-light); background:var(--bg-primary);
+  color:var(--text-secondary); cursor:pointer; }
+.autosave-status { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted);
+  white-space:nowrap; padding:0 6px; }
+.autosave-dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); flex-shrink:0;
+  transition:background .3s, box-shadow .3s; }
+.autosave-dot.saving { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
+.autosave-dot.saved  { background:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.15); }
+.autosave-dot.error  { background:#ef4444; }
+
+.ds-hdr-btn, .toolbar-btn {
+  display:inline-flex; align-items:center; gap:5px; padding:6px 11px; font-size:12px;
+  font-weight:500; border-radius:var(--radius-md); cursor:pointer;
+  border:1px solid var(--border-light); background:var(--bg-primary); color:var(--text-secondary);
+  transition:all .18s cubic-bezier(.4,0,.2,1); white-space:nowrap; box-shadow:var(--shadow-xs);
+}
+.ds-hdr-btn:hover, .toolbar-btn:hover { background:var(--bg-secondary); color:var(--text-primary); border-color:var(--border-mid); }
+.toolbar-btn.primary { background:var(--accent); color:#fff; border-color:transparent;
+  box-shadow:0 1px 4px rgba(37,99,235,.25); }
+.toolbar-btn.primary:hover { background:var(--accent-hover); color:#fff; }
+.toolbar-btn.danger { color:var(--coral-text); }
+.toolbar-btn.danger:hover { background:var(--coral-bg); border-color:var(--coral-text); }
+.toolbar-btn.xs { padding:4px 9px; font-size:11px; }
+
+/* ═══ CONTENT SHELL ═══ */
+.container { max-width:1440px; margin:0 auto; width:100%; padding:24px 32px 64px; }
+.view { display:none; }
+.view.active { display:block; }
+
+.section { margin-bottom:20px; border:1px solid var(--border-light); border-radius:var(--radius-xl);
+  background:var(--bg-primary); box-shadow:var(--shadow-sm); }
+.section-header { display:flex; align-items:center; gap:10px; padding:14px 20px;
+  border-bottom:1px solid var(--border-light); }
+.section-header h2 { font-size:14px; font-weight:600; }
+.section-header .sh-sub { font-size:12px; color:var(--text-secondary); font-weight:400; }
+.section-header .sh-actions { margin-left:auto; display:flex; gap:6px; align-items:center; }
+.section-icon { width:32px; height:32px; border-radius:var(--radius-md); display:flex;
+  align-items:center; justify-content:center; flex-shrink:0; }
+.icon-blue{background:var(--blue-bg);color:var(--blue-text)} .icon-teal{background:var(--teal-bg);color:var(--teal-text)}
+.icon-amber{background:var(--amber-bg);color:var(--amber-text)} .icon-purple{background:var(--purple-bg);color:var(--purple-text)}
+.icon-coral{background:var(--coral-bg);color:var(--coral-text)} .icon-grey{background:var(--grey-bg);color:var(--grey-text)}
+.section-body { padding:18px 20px; }
+.section-body.flush { padding:0; }
+
+/* ═══ BADGES / PILLS ═══ */
+.badge { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:600;
+  padding:3px 9px; border-radius:20px; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.b-blue{background:var(--blue-bg);color:var(--blue-text)} .b-teal{background:var(--teal-bg);color:var(--teal-text)}
+.b-amber{background:var(--amber-bg);color:var(--amber-text)} .b-purple{background:var(--purple-bg);color:var(--purple-text)}
+.b-coral{background:var(--coral-bg);color:var(--coral-text)} .b-grey{background:var(--grey-bg);color:var(--grey-text)}
+
+/* ═══ STAT CARDS ═══ */
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:20px; }
+.stat-card { border:1px solid var(--border-light); border-radius:var(--radius-xl); padding:16px 18px;
+  background:var(--bg-primary); box-shadow:var(--shadow-sm); }
+.stat-label { font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--text-muted); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.stat-value { font-size:24px; font-weight:700; letter-spacing:-.5px; line-height:1.1; }
+.stat-sub { font-size:11px; color:var(--text-secondary); margin-top:5px; }
+.pos { color:var(--green-success); } .neg { color:#dc2626; }
+body.force-dark .neg { color:#f87171; }
+
+/* ═══ PLATFORM GRID ═══ */
+.pf-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:14px; }
+.pf-card { border:1px solid var(--border-light); border-radius:var(--radius-xl); background:var(--bg-primary);
+  box-shadow:var(--shadow-sm); cursor:pointer; transition:all .18s cubic-bezier(.4,0,.2,1);
+  overflow:hidden; display:flex; flex-direction:column; }
+.pf-card:hover { box-shadow:var(--shadow-md); border-color:var(--border-mid); transform:translateY(-1px); }
+.pf-card-top { padding:15px 17px 12px; display:flex; align-items:flex-start; gap:11px; }
+.pf-logo { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:#fff; flex-shrink:0; letter-spacing:-.4px; }
+.pf-name { font-size:14px; font-weight:600; line-height:1.25; }
+.pf-meta { font-size:11px; color:var(--text-secondary); margin-top:2px; }
+.pf-card-body { padding:0 17px 14px; }
+.pf-progress-track { height:5px; border-radius:99px; background:var(--bg-tertiary); overflow:hidden; margin-bottom:6px; }
+.pf-progress-fill { height:100%; background:var(--accent); border-radius:99px; transition:width .4s cubic-bezier(.4,0,.2,1); }
+.pf-progress-label { display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted);
+  font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+.pf-stats { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border-light);
+  margin-top:auto; background:var(--bg-secondary); }
+.pf-stat { padding:9px 10px; text-align:center; border-right:1px solid var(--border-light); }
+.pf-stat:last-child { border-right:none; }
+.pf-stat-v { font-size:13px; font-weight:700; letter-spacing:-.2px; }
+.pf-stat-l { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em;
+  font-weight:600; margin-top:1px; }
+.pf-next { font-size:11px; color:var(--text-secondary); padding:9px 17px; border-top:1px solid var(--border-light);
+  display:flex; align-items:center; gap:6px; }
+.pf-next svg { opacity:.55; flex-shrink:0; }
+.pf-next b { color:var(--text-primary); font-weight:600; }
+
+/* ═══ TABLES ═══ */
+.tbl-wrap { overflow-x:auto; }
+table.tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+table.tbl th { text-align:left; font-size:10px; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--text-muted); padding:10px 14px;
+  border-bottom:1px solid var(--border-light); background:var(--bg-secondary); white-space:nowrap; }
+table.tbl td { padding:11px 14px; border-bottom:1px solid var(--border-light); vertical-align:middle; }
+table.tbl tr:last-child td { border-bottom:none; }
+table.tbl tbody tr:hover { background:var(--bg-secondary); }
+table.tbl td.num { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
+.row-actions { display:flex; gap:4px; justify-content:flex-end; opacity:0; transition:opacity .15s; }
+tr:hover .row-actions { opacity:1; }
+.icon-btn { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;
+  border-radius:6px; border:1px solid var(--border-light); background:var(--bg-secondary);
+  color:var(--text-secondary); cursor:pointer; padding:0; flex-shrink:0; transition:all .13s; }
+.icon-btn:hover { color:var(--text-primary); border-color:var(--border-mid); }
+.icon-btn.danger:hover { color:var(--coral-text); border-color:var(--coral-text); background:var(--coral-bg); }
+
+/* ═══ FORMS ═══ */
+.field { margin-bottom:14px; }
+.field-label { display:block; font-size:10px; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; }
+.inp, select.inp, textarea.inp {
+  width:100%; padding:8px 11px; font-size:13px; border:1px solid var(--border-light);
+  border-radius:var(--radius-md); background:var(--bg-secondary); color:var(--text-primary);
+  outline:none; transition:border-color .2s, box-shadow .2s;
+}
+.inp:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.10); background:var(--bg-primary); }
+textarea.inp { resize:vertical; min-height:74px; line-height:1.6; }
+select.inp { cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center; padding-right:28px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media (max-width:900px){ .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
+
+/* ═══ TABS ═══ */
+.tabs { display:flex; gap:2px; border-bottom:1px solid var(--border-light); margin-bottom:20px;
+  overflow-x:auto; padding-bottom:0; }
+.tab { padding:10px 14px; font-size:13px; font-weight:500; color:var(--text-secondary);
+  border:none; background:none; cursor:pointer; border-bottom:2px solid transparent;
+  white-space:nowrap; transition:all .16s; display:flex; align-items:center; gap:7px; }
+.tab:hover { color:var(--text-primary); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+.tab .tab-count { font-size:10px; font-weight:600; background:var(--bg-tertiary); color:var(--text-muted);
+  border-radius:20px; padding:1px 6px; }
+.tab.active .tab-count { background:var(--blue-bg); color:var(--blue-text); }
+.tabpane { display:none; } .tabpane.active { display:block; }
+
+/* ═══ CHECKLIST / STAGES ═══ */
+.stage-list { display:flex; flex-direction:column; }
+.stage-row { display:flex; align-items:flex-start; gap:12px; padding:13px 20px;
+  border-bottom:1px solid var(--border-light); transition:background .13s; }
+.stage-row:last-child { border-bottom:none; }
+.stage-row:hover { background:var(--bg-secondary); }
+.stage-check { width:19px; height:19px; border-radius:6px; border:1.6px solid var(--border-mid);
+  background:var(--bg-primary); cursor:pointer; flex-shrink:0; display:flex; align-items:center;
+  justify-content:center; margin-top:1px; transition:all .16s; padding:0; }
+.stage-check:hover { border-color:var(--accent); }
+.stage-check.done { background:var(--accent); border-color:var(--accent); }
+.stage-check.done svg { display:block; } .stage-check svg { display:none; }
+.stage-main { flex:1; min-width:0; }
+.stage-title { font-size:13px; font-weight:500; }
+.stage-row.is-done .stage-title { text-decoration:line-through; color:var(--text-muted); }
+.stage-note { font-size:12px; color:var(--text-secondary); margin-top:3px; line-height:1.55; white-space:pre-wrap; }
+.stage-note-edit { width:100%; margin-top:6px; font-size:12px; padding:7px 10px; border-radius:6px;
+  border:1px solid var(--border-light); background:var(--bg-secondary); color:var(--text-primary);
+  outline:none; resize:vertical; min-height:34px; line-height:1.55; }
+.stage-num { font-size:10px; font-weight:700; color:var(--text-muted); width:16px; flex-shrink:0;
+  margin-top:3px; font-variant-numeric:tabular-nums; }
+
+/* ═══ ACTION ITEMS ═══ */
+.ai-row { display:flex; align-items:flex-start; gap:11px; padding:11px 20px;
+  border-bottom:1px solid var(--border-light); }
+.ai-row:last-child { border-bottom:none; }
+.ai-row:hover { background:var(--bg-secondary); }
+.ai-row.is-done .ai-text { text-decoration:line-through; color:var(--text-muted); }
+.ai-text { font-size:13px; flex:1; min-width:0; }
+.ai-tags { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+.ai-tag { font-size:10.5px; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px; }
+.ai-tag.overdue { color:#dc2626; font-weight:600; }
+.ai-tag.soon { color:var(--amber-text); font-weight:600; }
+
+/* ═══ MEETING LOG ═══ */
+.mt-entry { border-bottom:1px solid var(--border-light); padding:16px 20px; }
+.mt-entry:last-child { border-bottom:none; }
+.mt-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+.mt-date { font-size:13px; font-weight:600; }
+.mt-who { font-size:11.5px; color:var(--text-secondary); }
+.mt-body { font-size:12.5px; line-height:1.65; color:var(--text-secondary); white-space:pre-wrap; }
+.mt-body strong { color:var(--text-primary); }
+
+/* ═══ EMPTY STATE ═══ */
+.empty { padding:40px 24px; text-align:center; color:var(--text-muted); }
+.empty-title { font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:4px; }
+.empty-sub { font-size:12px; max-width:380px; margin:0 auto 14px; line-height:1.6; }
+
+/* ═══ MODALS ═══ */
+.md-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px); z-index:9500; display:flex; align-items:center;
+  justify-content:center; padding:20px; }
+.md-overlay.hidden { display:none; }
+.md-card { background:var(--bg-primary); border:1px solid var(--border-light); border-radius:var(--radius-xl);
+  box-shadow:0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08);
+  width:100%; max-width:520px; max-height:90vh; display:flex; flex-direction:column; }
+.md-card.wide { max-width:760px; }
+.md-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  padding:18px 22px 15px; border-bottom:1px solid var(--border-light); flex-shrink:0; }
+.md-header-left { display:flex; align-items:center; gap:12px; min-width:0; }
+.md-icon { width:36px; height:36px; border-radius:var(--radius-md); display:flex; align-items:center;
+  justify-content:center; flex-shrink:0; }
+.md-title { font-size:16px; font-weight:700; margin:0 0 2px; line-height:1.3; }
+.md-subtitle { font-size:12px; color:var(--text-secondary); margin:0; line-height:1.5; }
+.md-close { display:flex; align-items:center; justify-content:center; width:30px; height:30px;
+  border-radius:var(--radius-md); border:1px solid var(--border-light); background:none;
+  cursor:pointer; color:var(--text-secondary); flex-shrink:0; transition:all .18s; }
+.md-close:hover { background:var(--bg-secondary); color:var(--text-primary); border-color:var(--border-mid); }
+.md-body { padding:20px 22px; flex:1; overflow-y:auto; }
+.md-footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:14px 22px;
+  border-top:1px solid var(--border-light); background:var(--bg-secondary);
+  border-radius:0 0 var(--radius-xl) var(--radius-xl); flex-shrink:0; }
+.md-footer .spacer { margin-right:auto; }
+
+/* ═══ TOASTS ═══ */
+.toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex;
+  flex-direction:column; gap:8px; pointer-events:none; }
+.toast { padding:11px 16px; border-radius:var(--radius-lg); font-size:13px;
+  background:var(--text-primary); color:var(--bg-primary); opacity:0;
+  transform:translateY(16px) scale(.96); transition:opacity .3s cubic-bezier(.34,1.56,.64,1),
+  transform .3s cubic-bezier(.34,1.56,.64,1); max-width:340px; box-shadow:var(--shadow-lg); }
+.toast.show { opacity:1; transform:translateY(0) scale(1); }
+.toast.success { background:#14532d; color:#dcfce7; }
+.toast.error { background:#7f1d1d; color:#fee2e2; }
+
+/* ═══ REPORT PREVIEW ═══ */
+.report-out { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; line-height:1.7;
+  white-space:pre-wrap; background:var(--bg-secondary); border:1px solid var(--border-light);
+  border-radius:var(--radius-md); padding:18px 20px; max-height:520px; overflow-y:auto; }
+
+/* ═══ MISC ═══ */
+.link { color:var(--accent); text-decoration:none; font-weight:500; }
+.link:hover { text-decoration:underline; }
+.divider { height:1px; background:var(--border-light); margin:18px 0; }
+.hint { font-size:11.5px; color:var(--text-muted); line-height:1.55; margin-top:5px; }
+.kv { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-light); font-size:12.5px; }
+.kv:last-child { border-bottom:none; }
+.kv-k { width:180px; flex-shrink:0; color:var(--text-muted); font-weight:500; }
+.kv-v { flex:1; min-width:0; }
+.filter-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:12px 20px;
+  border-bottom:1px solid var(--border-light); background:var(--bg-secondary); }
+.filter-bar .inp { width:auto; min-width:150px; padding:6px 10px; font-size:12px; background:var(--bg-primary); }
+.search-wrap { position:relative; flex:1; min-width:180px; max-width:300px; }
+.search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%);
+  color:var(--text-muted); pointer-events:none; }
+.search-wrap input { width:100%; padding:6px 10px 6px 30px; font-size:12px; border:1px solid var(--border-light);
+  border-radius:var(--radius-md); background:var(--bg-primary); color:var(--text-primary); outline:none; }
+.search-wrap input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.10); }
+.ds-sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:550; }
+.ds-sidebar-overlay.open { display:block; }
+
+@media (max-width:1024px) {
+  .ds-sidebar { transform:translateX(-100%); transition:transform .25s cubic-bezier(.4,0,.2,1);
+    width:260px; box-shadow:4px 0 24px rgba(0,0,0,.15); }
+  .ds-sidebar.open { transform:translateX(0); }
+  .ds-main { margin-left:0; }
+  .ds-hamburger { display:flex; }
+  .container { padding:18px 18px 56px; }
+  .ds-top-header { padding:0 18px; }
+  .ds-top-header-subtitle { display:none; }
+  .kv { flex-direction:column; gap:2px; } .kv-k { width:auto; }
+}
+@media print {
+  .ds-sidebar, .ds-top-header, .toast-container, .row-actions, .sh-actions, .filter-bar { display:none !important; }
+  .ds-main { margin-left:0; } .section { break-inside:avoid; box-shadow:none; }
+}
+</style>
+</head>
+<body>
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<aside class="ds-sidebar" id="ds-sidebar">
+  <div class="ds-sidebar-logo">
+    <svg width="104" height="28" viewBox="0 0 978 262" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M220.008 216.22L118.899 0V137.338C118.899 180.903 154.603 216.22 198.647 216.22H220.008Z" fill="#016AC9"/>
+      <path d="M0 216.22L101.109 0V137.338C101.109 180.903 65.4042 216.22 21.361 216.22H0Z" fill="#016AC9"/>
+      <path d="M108.94 181.71L116.166 194.381C121.014 202.884 128.12 209.912 136.715 214.708L149.526 221.855L136.715 229.002C128.12 233.798 121.014 240.826 116.166 249.328L108.94 262L101.715 249.328C96.8664 240.826 89.7607 233.798 81.1653 229.002L68.3542 221.855L81.1653 214.708C89.7607 209.912 96.8664 202.884 101.715 194.381L108.94 181.71Z" fill="#016AC9"/>
+      <path d="M305.484 193.174H370.901V224.402H265.665V28.0327H305.484V193.174Z" fill="#016AC9"/>
+      <path d="M416.402 49.9764C409.385 49.9764 403.507 47.8193 398.766 43.5055C394.218 39.0045 391.942 33.4716 391.942 26.9072C391.942 20.3428 394.218 14.9037 398.766 10.59C403.507 6.08867 409.385 3.83804 416.402 3.83804C423.418 3.83804 429.2 6.08867 433.752 10.59C438.493 14.9037 440.861 20.3428 440.861 26.9072C440.861 33.4716 438.493 39.0045 433.752 43.5055C429.2 47.8193 423.418 49.9764 416.402 49.9764ZM436.028 68.5444V224.402H396.209V68.5444H436.028Z" fill="#016AC9"/>
+      <path d="M547.613 100.898H520.024V224.402H479.636V100.898H461.716V68.5446H479.636V60.6673C479.636 41.5366 485.137 27.4701 496.133 18.4675C507.129 9.4649 523.719 5.24492 545.906 5.80758V39.0047C536.233 38.8171 529.504 40.4114 525.71 43.7873C521.919 47.1635 520.024 53.2588 520.024 62.074V68.5446H547.613V100.898Z" fill="#016AC9"/>
+      <path d="M619.775 100.897V176.294C619.775 181.546 621.009 185.39 623.473 187.828C626.126 190.079 630.49 191.204 636.557 191.204H655.045V224.402H630.013C596.456 224.402 579.671 208.272 579.671 176.013V100.897H560.901V68.5442H579.671V30.0017H619.775V68.5442H655.045V100.897H619.775Z" fill="#016AC9"/>
+      <path d="M741.67 26.9073V224.402H693.032V26.9073H741.67Z" fill="#016AC9"/>
+      <path d="M919.123 258.161L893.526 224.12C885.944 225.62 878.547 226.371 871.342 226.371C852.572 226.371 835.314 222.057 819.577 213.43C804.03 204.802 791.608 192.799 782.319 177.42C773.215 161.852 768.667 144.41 768.667 125.092C768.667 105.774 773.215 88.4248 782.319 73.0458C791.608 57.6661 804.03 45.6627 819.577 37.0351C835.314 28.4076 852.572 24.0939 871.342 24.0939C890.112 24.0939 907.274 28.4076 922.825 37.0351C938.558 45.6627 950.887 57.6661 959.796 73.0458C968.896 88.4248 973.448 105.774 973.448 125.092C973.448 141.972 969.938 157.445 962.925 171.512C956.101 185.39 946.524 196.925 934.198 206.115L978 258.161H919.123ZM818.439 125.092C818.439 142.534 823.177 156.507 832.661 167.01C842.33 177.326 855.225 182.483 871.342 182.483C887.27 182.483 899.973 177.232 909.454 166.729C919.123 156.226 923.96 142.347 923.96 125.092C923.96 107.649 919.123 93.7702 909.454 83.4547C899.973 72.9519 887.27 67.7001 871.342 67.7001C855.225 67.7001 842.33 72.8579 832.661 83.1734C823.177 93.489 818.439 107.462 818.439 125.092Z" fill="#016AC9"/>
+    </svg>
+  </div>
+
+  <nav class="ds-sidebar-nav">
+    <button class="ds-nav-item active" data-nav="dashboard" onclick="go('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Overview
+    </button>
+    <button class="ds-nav-item" data-nav="offers" onclick="go('offers')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>
+      Offers &amp; tests<span class="nav-count" id="nav-count-offers">0</span>
+    </button>
+    <button class="ds-nav-item" data-nav="actions" onclick="go('actions')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Action items<span class="nav-count" id="nav-count-actions">0</span>
+    </button>
+    <button class="ds-nav-item" data-nav="meetings" onclick="go('meetings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Meetings<span class="nav-count" id="nav-count-meetings">0</span>
+    </button>
+    <button class="ds-nav-item" data-nav="report" onclick="go('report')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+      Weekly update
+    </button>
+
+    <div class="ds-nav-section">Platforms</div>
+    <div id="nav-platforms"></div>
+
+    <div class="ds-nav-section">Linked tools</div>
+    <a class="ds-nav-item" id="nav-research-link" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M2 13l5-4 4 4 3-3 4 3"/></svg>
+      Creative research
+      <svg style="margin-left:auto;width:12px;height:12px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 2h4v4M14 2 8 8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </nav>
+
+  <div class="ds-sidebar-footer">
+    <button class="ds-nav-item" onclick="go('settings')" data-nav="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.68 1.09 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings &amp; data
+    </button>
+    <button class="ds-nav-item" onclick="cycleTheme()">
+      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+      <span id="theme-label">Appearance</span>
+    </button>
+  </div>
+</aside>
+<div class="ds-sidebar-overlay" id="ds-sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<div class="ds-main">
+  <div class="ds-top-header">
+    <div class="ds-top-header-left">
+      <button class="ds-hamburger" onclick="toggleSidebar()" aria-label="Menu">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+      </button>
+      <div style="min-width:0">
+        <h1 class="ds-top-header-title" id="page-title">Traffic Platform Development</h1>
+        <p class="ds-top-header-subtitle" id="page-subtitle">Strategy, POC relationships, tests and P&amp;L across every traffic source</p>
+      </div>
+    </div>
+    <div class="ds-top-header-right">
+      <div class="autosave-status"><span class="autosave-dot saved" id="save-dot"></span><span id="save-text">Saved</span></div>
+      <button class="ds-hdr-btn" onclick="openExport()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2 13h12"/></svg>
+        Export
+      </button>
+      <button class="toolbar-btn primary" onclick="openQuickAdd()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        Add
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="view active" id="view-dashboard"></div>
+    <div class="view" id="view-platform"></div>
+    <div class="view" id="view-offers"></div>
+    <div class="view" id="view-actions"></div>
+    <div class="view" id="view-meetings"></div>
+    <div class="view" id="view-report"></div>
+    <div class="view" id="view-settings"></div>
+  </div>
+</div>
+
+<!-- ══════════════ GENERIC MODAL ══════════════ -->
+<div class="md-overlay hidden" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="md-card" id="modal-card">
+    <div class="md-header">
+      <div class="md-header-left">
+        <div class="md-icon icon-blue" id="modal-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        </div>
+        <div>
+          <h2 class="md-title" id="modal-title">Title</h2>
+          <p class="md-subtitle" id="modal-sub"></p>
+        </div>
+      </div>
+      <button class="md-close" onclick="closeModal()" aria-label="Close">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l12 12M14 2L2 14"/></svg>
+      </button>
+    </div>
+    <div class="md-body" id="modal-body"></div>
+    <div class="md-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+<input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(this)">
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   LiftIQ — Traffic Platform Development
+   Single-file app. Vanilla JS. localStorage + optional Supabase sync.
+   ═══════════════════════════════════════════════════════════════ */
+
+const KEY = 'liftiq_tpd_v1';
+const CFG = 'liftiq_tpd_cfg';
+
+/* ── safe storage (falls back to memory in sandboxed frames) ── */
+const mem = {};
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return mem[k] ?? null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){ mem[k]=v; } },
+  del(k){ try { localStorage.removeItem(k); } catch(e){ delete mem[k]; } }
+};
+
+const uid = () => Math.random().toString(36).slice(2,10);
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toISOString().slice(0,10);
+
+/* ═══════════════ STATUS + STAGE DEFINITIONS ═══════════════ */
+const STATUS = {
+  prospecting: { label:'Prospecting',  cls:'b-grey',   dot:'#9ca3af', order:1 },
+  contact:     { label:'Contact made', cls:'b-purple', dot:'#8b5cf6', order:2 },
+  onboarding:  { label:'Onboarding',   cls:'b-amber',  dot:'#f59e0b', order:3 },
+  testing:     { label:'Testing',      cls:'b-blue',   dot:'#3b82f6', order:4 },
+  scaling:     { label:'Scaling',      cls:'b-teal',   dot:'#16a34a', order:5 },
+  paused:      { label:'Paused',       cls:'b-grey',   dot:'#d1d5db', order:6 },
+  dead:        { label:'Closed',       cls:'b-coral',  dot:'#ef4444', order:7 }
+};
+const OFFER_STATUS = {
+  queued:     { label:'Queued',     cls:'b-grey'   },
+  testing:    { label:'Testing',    cls:'b-blue'   },
+  live:       { label:'Live',       cls:'b-teal'   },
+  paused:     { label:'Paused',     cls:'b-amber'  },
+  killed:     { label:'Killed',     cls:'b-coral'  },
+  not_tested: { label:'Not tested', cls:'b-grey'   }
+};
+const PRIORITY = { p1:'P1 — core', p2:'P2 — active', p3:'P3 — watch' };
+
+const STAGE_TEMPLATE = [
+  ['Platform fit assessment',      'Traffic type, inventory, targeting depth, which of our verticals can legally run.'],
+  ['POC secured',                  'Named rep, email/Telegram, timezone, meeting cadence agreed.'],
+  ['Commercials agreed',           'Minimum deposit, payment terms, billing entity, rebate/bonus structure, spend commitment.'],
+  ['Account + compliance approved','Account live, entity + billing verified, vertical and landing page pre-approved by policy.'],
+  ['Tracking live',                'Pixel/postback firing, Everflow S2S mapped, click IDs passing, conversion parity confirmed.'],
+  ['First test launched',          'Offer, geo, creative set, budget, and success criteria defined before spend starts.'],
+  ['Test read + decision',         'Hit the threshold? Documented verdict: scale, iterate, or park with a reason.'],
+  ['Scaling playbook',             'Repeatable structure: winning angles, bid strategy, budget ladder, rep-supported whitelists.']
+];
+
+/* ═══════════════ SEED ═══════════════ */
+function seedPlatform(o){
+  return Object.assign({
+    id: uid(), name:'', short:'', color:'#2563eb', fg:'#ffffff',
+    category:'', accessModel:'', status:'prospecting', priority:'p2',
+    poc:{ name:'', role:'', email:'', telegram:'', timezone:'', cadence:'', meetingDay:'', nextMeeting:'', path:'' },
+    strategy:{ objective:'', whyFit:'', verticals:'', geos:'', spendTarget:'', minDeposit:'',
+               payment:'', tracking:'', formats:'', constraints:'', spyNotes:'' },
+    stages: STAGE_TEMPLATE.map((s,i)=>({ id:uid(), label:s[0], hint:s[1], note:'', done:false })),
+    kpis: [], actions: [], meetings: [], offers: [], research: [], notes:''
+  }, o);
+}
+
+const SEED = [
+  seedPlatform({
+    name:'Facebook', short:'Fb', color:'#1877F2', category:'Social', accessModel:'Self-serve · no POC yet',
+    status:'prospecting', priority:'p1',
+    poc:{ name:'', role:'', email:'', telegram:'', timezone:'', cadence:'', meetingDay:'', nextMeeting:'',
+      path:'No direct rep yet. Realistic routes: (1) reach a spend level where Meta assigns a partner manager, (2) go through a Meta Business Partner / reseller who can attach a rep and higher account limits, (3) warm intro from an advertiser or network already on a managed account.' },
+    strategy:{
+      objective:'Open a compliant, rep-supported route into Meta for the verticals we can actually clear policy on.',
+      whyFit:'Largest available volume and the deepest creative feedback loop — but the tightest policy surface for our current verticals.',
+      verticals:'Assess per vertical: dating, supplements and insurance each have different policy exposure.',
+      geos:'', spendTarget:'', minDeposit:'Self-serve — no minimum. Reseller accounts usually carry one.',
+      payment:'Card / auto-billing on self-serve. Net terms only via reseller or managed account.',
+      tracking:'CAPI + pixel. Confirm Everflow can pass event data server-side and dedupe against the pixel.',
+      formats:'Feed, Reels, Stories. Video-first.',
+      constraints:'Policy is the whole game here — personal attributes, health claims and dating restrictions decide what is even testable. Verify current rules before building creative.',
+      spyNotes:'Meta Ad Library is the official free source. Log the strongest angles into Creative Research and link them back here.' },
+    notes:'QUESTIONS ONCE WE HAVE A REP\n• What spend level unlocks a dedicated partner manager?\n• Which of our verticals can be pre-approved rather than reviewed post-launch?\n• Can we get a policy pre-check on landing pages before we spend?\n• Are reseller/partner accounts available with net terms?\n• What is the appeal path when an account is restricted?'
+  }),
+  seedPlatform({
+    name:'TikTok', short:'Tt', color:'#000000', category:'Social', accessModel:'Self-serve + rep at spend',
+    status:'contact', priority:'p1',
+    poc:{ cadence:'Weekly', meetingDay:'', name:'', role:'', email:'', telegram:'', timezone:'', nextMeeting:'', path:'' },
+    strategy:{
+      objective:'Build a repeatable UGC-style creative engine and get rep-level support on policy and scaling.',
+      whyFit:'Cheap reach on a younger demo, and creative velocity is our strength.',
+      verticals:'', geos:'', spendTarget:'', minDeposit:'', payment:'',
+      tracking:'TikTok pixel + Events API. Confirm S2S mapping into Everflow.',
+      formats:'In-feed video, Spark Ads. Native-looking UGC beats polished production.',
+      constraints:'Vertical restrictions and creative review times — ask the rep for the current restricted list in writing.',
+      spyNotes:'TikTok Creative Center is the free official library. Cross-check with our spy stack and log winners in Creative Research.' },
+    notes:'WEEKLY AGENDA\n• Spend + performance recap\n• Creative review — what got rejected and why\n• Whitelist / policy asks\n• Upcoming offer tests'
+  }),
+  seedPlatform({
+    name:'MediaGo', short:'Mg', color:'#1E64F0', category:'Native', accessModel:'Rep-led',
+    status:'testing', priority:'p1',
+    poc:{ cadence:'Weekly', meetingDay:'', name:'', role:'', email:'', telegram:'', timezone:'', nextMeeting:'', path:'' },
+    strategy:{
+      objective:'Establish native as a reliable second scaling channel for long-form VSL and advertorial funnels.',
+      whyFit:'Native traffic tolerates long-form pre-sell pages, which suits our supplement and insurance funnels.',
+      verticals:'', geos:'', spendTarget:'', minDeposit:'', payment:'',
+      tracking:'S2S postback into Everflow. Confirm click ID macro and conversion dedupe on day one.',
+      formats:'Native image + headline, advertorial pre-sell, VSL landers.',
+      constraints:'', spyNotes:'Log winning headline/thumbnail pairs into Creative Research — native angles transfer across networks.' },
+    notes:'WEEKLY AGENDA\n• Spend pacing vs plan\n• Publisher/site whitelist and blacklist updates\n• Creative refresh cadence\n• Any offers the rep is seeing work for others in our verticals'
+  }),
+  seedPlatform({
+    name:'News Break', short:'Nb', color:'#E4372E', category:'Native · news app', accessModel:'Self-serve · no POC yet',
+    status:'prospecting', priority:'p2',
+    poc:{ name:'', role:'', email:'', telegram:'', timezone:'', cadence:'', meetingDay:'', nextMeeting:'',
+      path:'No rep yet. Route: submit the advertiser/sales enquiry form, then follow up with a spend forecast — that is usually what gets a manager attached. Ask any network contact who already buys here for a warm intro.' },
+    strategy:{
+      objective:'Get a named rep and validate whether the US local-news audience converts on our health and insurance funnels.',
+      whyFit:'US-heavy, older-skewing audience — the demo our insurance and supplement offers are built for.',
+      verticals:'', geos:'US', spendTarget:'', minDeposit:'', payment:'',
+      tracking:'', formats:'Native in-feed, article-style pre-sell.', constraints:'', spyNotes:'' },
+    notes:'OUTREACH CHECKLIST\n• Submit advertiser enquiry form\n• Follow up with monthly spend forecast and verticals\n• Ask for a rep, minimum deposit and payment terms in writing\n• Confirm which verticals are approved before building creative'
+  }),
+  seedPlatform({
+    name:'Taboola', short:'Tb', color:'#0B4EE0', category:'Native', accessModel:'Rep-led',
+    status:'onboarding', priority:'p2',
+    poc:{ cadence:'Weekly', meetingDay:'', name:'', role:'', email:'', telegram:'', timezone:'', nextMeeting:'', path:'' },
+    strategy:{
+      objective:'Clear onboarding and compliance, then run a controlled first test on our strongest advertorial funnel.',
+      whyFit:'Premium publisher inventory at scale, strong for advertorial-led health funnels.',
+      verticals:'', geos:'', spendTarget:'', minDeposit:'Confirm with rep', payment:'Confirm terms and billing entity',
+      tracking:'Pixel + S2S. Map to Everflow before first spend.',
+      formats:'Native thumbnail + headline, advertorial pre-sell.',
+      constraints:'Editorial and compliance review on landing pages — build in lead time before launch.', spyNotes:'' },
+    notes:'WEEKLY AGENDA\n• Onboarding blockers\n• Compliance review status on landers\n• Benchmark CPCs for our verticals and geos\n• First test scope and success threshold'
+  }),
+  seedPlatform({
+    name:'Outbrain', short:'Ob', color:'#EE6C1B', category:'Native', accessModel:'Rep-led',
+    status:'contact', priority:'p2',
+    poc:{ cadence:'Weekly', meetingDay:'', name:'', role:'', email:'', telegram:'', timezone:'', nextMeeting:'', path:'' },
+    strategy:{
+      objective:'Run Outbrain in parallel with Taboola on the same funnel to get a clean network-vs-network read.',
+      whyFit:'Comparable native inventory — lets us benchmark one native network against another on identical creative.',
+      verticals:'', geos:'', spendTarget:'', minDeposit:'Confirm with rep', payment:'',
+      tracking:'', formats:'Native thumbnail + headline, advertorial.',
+      constraints:'', spyNotes:'Run the identical creative set on both native networks so the comparison is actually clean.' },
+    notes:'WEEKLY AGENDA\n• Spend and CPA vs Taboola on the same funnel\n• Section-level whitelist/blacklist\n• Creative approval turnaround\n• Rebate or bonus structure at higher spend'
+  }),
+  seedPlatform({
+    name:'Snapchat', short:'Sc', color:'#FFFC00', fg:'#111827', category:'Social', accessModel:'Self-serve + rep',
+    status:'scaling', priority:'p1',
+    poc:{ cadence:'Weekly', meetingDay:'', name:'', role:'', email:'', telegram:'', timezone:'', nextMeeting:'', path:'' },
+    strategy:{
+      objective:'Protect and grow the channel we already know converts — push for rep-supported scaling and better terms.',
+      whyFit:'Already an active buying channel. Young demo, strong for dating.',
+      verticals:'Dating is the proven fit — test whether supplements can hold.',
+      geos:'', spendTarget:'', minDeposit:'', payment:'',
+      tracking:'Snap Pixel + CAPI into Everflow.',
+      formats:'Vertical video, Story ads. Fast hook in the first two seconds.',
+      constraints:'', spyNotes:'Snapchat creative burns out fast — track refresh cadence per angle in Creative Research.' },
+    notes:'WEEKLY AGENDA\n• Spend + ROAS by offer\n• Creative fatigue and refresh plan\n• Bonus/rebate at current spend level\n• Beta features or placements we can get early access to'
+  }),
+  seedPlatform({
+    name:'Mintegral', short:'Mi', color:'#16A34A', category:'In-app · programmatic', accessModel:'Rep-led',
+    status:'contact', priority:'p3',
+    poc:{ cadence:'Weekly', meetingDay:'', name:'', role:'', email:'', telegram:'', timezone:'', nextMeeting:'', path:'' },
+    strategy:{
+      objective:'Answer one question first: does in-app rewarded/interstitial inventory produce leads worth paying for, or is this an app-install channel only?',
+      whyFit:'Open question. Volume is there, but the inventory is built around app installs — intent quality for lead gen needs proving before we commit budget.',
+      verticals:'', geos:'', spendTarget:'', minDeposit:'', payment:'',
+      tracking:'In-app attribution differs from web. Confirm how conversions land in Everflow before any spend.',
+      formats:'Playable, rewarded video, interstitial.',
+      constraints:'If our offers are web lead-gen, confirm the network will even serve them and on what inventory.',
+      spyNotes:'' },
+    notes:'FIT QUESTIONS FOR THE REP\n• Can you serve web lead-gen offers, or app installs only?\n• Which inventory types are available for non-app advertisers?\n• Do you have advertisers in dating / supplements / insurance today?\n• What does a realistic test budget and read window look like?\n• How does attribution work for a web conversion?'
+  }),
+  seedPlatform({
+    name:'Google', short:'Gg', color:'#34A853', category:'Search · Display · YouTube', accessModel:'Self-serve · no POC yet',
+    status:'prospecting', priority:'p1',
+    poc:{ name:'', role:'', email:'', telegram:'', timezone:'', cadence:'', meetingDay:'', nextMeeting:'',
+      path:'No rep yet. Routes: (1) reach the spend level where Google attaches an account strategist, (2) go through a Google Partner agency that can attach support and higher limits, (3) request contact from within the Ads account once billing history exists.' },
+    strategy:{
+      objective:'Establish a compliant entry point — most likely search/demand-gen on the least policy-restricted vertical first.',
+      whyFit:'Intent-led traffic and the largest display footprint; the ceiling is high if we can clear policy.',
+      verticals:'Start with whichever vertical has the cleanest policy path, not the highest payout.',
+      geos:'', spendTarget:'', minDeposit:'Self-serve — none.', payment:'Card / auto-billing; net terms need a credit line.',
+      tracking:'GA4 + Google Ads conversion tracking, or enhanced conversions server-side into Everflow.',
+      formats:'Search, Demand Gen, YouTube, Display.',
+      constraints:'Healthcare, dating and financial services all sit under restricted policies with certification requirements in some cases. Confirm current requirements before building anything.',
+      spyNotes:'Google Ads Transparency Center is the official free source for competitor ads.' },
+    notes:'OUTREACH CHECKLIST\n• Confirm the spend threshold for an assigned strategist\n• Shortlist Google Partner agencies that work with performance advertisers\n• Get written clarity on certification requirements per vertical\n• Build one compliant funnel before spending anything'
+  })
+];
+
+/* ═══════════════ STATE ═══════════════ */
+let S = null, CONF = null, view = 'dashboard', curPid = null, curTab = 'overview';
+
+function defaultConf(){
+  return { owner:'Mykyta', team:'LiftIQ · Traffic Intelligence', currency:'USD',
+    researchBase:'https://mkruchan.github.io/creative-research/',
+    everflowBase:'', sb:{ url:'', key:'', table:'tpd_state', row:'main' }, theme:'auto' };
+}
+
+function load(){
+  try { S = JSON.parse(store.get(KEY)); } catch(e){ S = null; }
+  if (!S || !Array.isArray(S.platforms) || !S.platforms.length) {
+    S = { version:1, created:Date.now(), updated:Date.now(), platforms:SEED };
+  }
+  try { CONF = Object.assign(defaultConf(), JSON.parse(store.get(CFG)||'{}')); } catch(e){ CONF = defaultConf(); }
+  // migrate: ensure every platform has all keys
+  S.platforms.forEach(p => {
+    const base = seedPlatform({});
+    ['poc','strategy'].forEach(k => p[k] = Object.assign({}, base[k], p[k]||{}));
+    ['stages','kpis','actions','meetings','offers','research'].forEach(k => { if(!Array.isArray(p[k])) p[k]=[]; });
+    if (!p.stages.length) p.stages = base.stages;
+    if (!p.fg) p.fg = '#ffffff';
+  });
+}
+
+let saveTimer = null, cloudTimer = null;
+let sbState = 'idle'; // idle | connecting | connected | error | offline
+function cloudConfigured(){ return !!(CONF.sb.url && CONF.sb.key); }
+function save(quiet){
+  S.updated = Date.now();
+  dot('saving','Saving…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    store.set(KEY, JSON.stringify(S));
+    store.set(CFG, JSON.stringify(CONF));
+    if (!cloudConfigured()) dot('saved','Saved '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+    else dot('saving','Syncing…');
+  }, 300);
+  if (cloudConfigured()) {
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(()=>cloudPush(true), quiet ? 1400 : 700);
+  }
+}
+function dot(cls, txt){
+  const d = document.getElementById('save-dot'), t = document.getElementById('save-text');
+  if(d){ d.className = 'autosave-dot ' + cls; } if(t) t.textContent = txt;
+}
+
+/* ═══════════════ HELPERS ═══════════════ */
+const P = id => S.platforms.find(p => p.id === id);
+function money(n){
+  n = Number(n)||0;
+  const s = Math.abs(n) >= 1000 ? Math.round(n).toLocaleString('en-US') : (Math.round(n*100)/100).toLocaleString('en-US');
+  return (n<0?'−$':'$') + s.replace('-','');
+}
+function pct(n){ return (n>=0?'+':'') + (Math.round(n*10)/10) + '%'; }
+function pnlClass(n){ return n>0?'pos':(n<0?'neg':''); }
+
+function offerPnl(o){
+  const sp = Number(o.spend)||0, rv = Number(o.revenue)||0;
+  return { spend:sp, rev:rv, profit:rv-sp, roi: sp>0 ? ((rv-sp)/sp)*100 : 0 };
+}
+function platformTotals(p){
+  let spend=0, rev=0, tested=0, untested=0, live=0;
+  p.offers.forEach(o=>{
+    const t = offerPnl(o); spend+=t.spend; rev+=t.rev;
+    if (o.status==='not_tested'||o.status==='queued') untested++; else tested++;
+    if (o.status==='live'||o.status==='testing') live++;
+  });
+  const done = p.stages.filter(s=>s.done).length;
+  return { spend, rev, profit:rev-spend, roi: spend>0?((rev-spend)/spend)*100:0,
+    tested, untested, live, offers:p.offers.length,
+    stagesDone:done, stagesTotal:p.stages.length,
+    progress: p.stages.length ? Math.round(done/p.stages.length*100) : 0,
+    openActions: p.actions.filter(a=>!a.done).length };
+}
+function allActions(){
+  const out=[]; S.platforms.forEach(p=>p.actions.forEach(a=>out.push({...a, pid:p.id, pname:p.name, pcolor:p.color})));
+  return out;
+}
+function allOffers(){
+  const out=[]; S.platforms.forEach(p=>p.offers.forEach(o=>out.push({...o, pid:p.id, pname:p.name, pcolor:p.color})));
+  return out;
+}
+function allMeetings(){
+  const out=[]; S.platforms.forEach(p=>p.meetings.forEach(m=>out.push({...m, pid:p.id, pname:p.name, pcolor:p.color})));
+  return out.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+}
+function dueMeta(d){
+  if(!d) return {cls:'', txt:''};
+  const diff = Math.round((new Date(d+'T00:00:00') - new Date(today()+'T00:00:00'))/86400000);
+  if (diff < 0)  return {cls:'overdue', txt:`Overdue ${Math.abs(diff)}d`};
+  if (diff === 0)return {cls:'overdue', txt:'Due today'};
+  if (diff <= 3) return {cls:'soon',    txt:`Due in ${diff}d`};
+  return {cls:'', txt:'Due '+d};
+}
+function niceDate(d){
+  if(!d) return '—';
+  const dt = new Date(d+'T00:00:00');
+  if (isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+function researchUrl(slug){
+  const base = (CONF.researchBase||'').replace(/\/+$/,'');
+  if(!base) return '';
+  return slug ? base + '/' + String(slug).replace(/^\/+/,'') : base;
+}
+
+function toast(msg, kind){
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (kind||'');
+  t.textContent = msg; c.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),320); }, 2600);
+}
+
+/* ═══════════════ ROUTING ═══════════════ */
+const TITLES = {
+  dashboard:['Traffic Platform Development','Strategy, POC relationships, tests and P&L across every traffic source'],
+  offers:   ['Offers & tests','Every offer we brought to a platform, and what it made or lost'],
+  actions:  ['Action items','What is open right now, and what is next per platform'],
+  meetings: ['Meeting notes','Everything discussed with platform reps, by date'],
+  report:   ['Weekly update','Generate a management-ready summary from live data'],
+  settings: ['Settings & data','Identity, linked tools, cloud sync, backup']
+};
+function go(v, pid){
+  view = v; if (pid) curPid = pid;
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.ds-nav-item[data-nav]').forEach(b=>b.classList.remove('active'));
+  const nav = document.querySelector(`.ds-nav-item[data-nav="${v==='platform'?'pf-'+curPid:v}"]`);
+  if (nav) nav.classList.add('active');
+  if (v!=='platform'){ document.getElementById('page-title').textContent = TITLES[v][0];
+    document.getElementById('page-subtitle').textContent = TITLES[v][1]; }
+  render();
+  window.scrollTo({top:0});
+  if (window.innerWidth<=1024) closeSidebar();
+}
+function openPlatform(pid, tab){ curPid = pid; curTab = tab||'overview'; go('platform', pid); }
+
+function toggleSidebar(){
+  document.getElementById('ds-sidebar').classList.toggle('open');
+  document.getElementById('ds-sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('ds-sidebar').classList.remove('open');
+  document.getElementById('ds-sidebar-overlay').classList.remove('open');
+}
+
+/* ═══════════════ THEME ═══════════════ */
+function cycleTheme(){
+  const order = ['auto','light','dark'];
+  CONF.theme = order[(order.indexOf(CONF.theme||'auto')+1)%3];
+  applyTheme(); save(true);
+}
+function applyTheme(){
+  const b = document.body;
+  document.documentElement.classList.remove('force-dark-early');
+  b.classList.remove('force-dark','force-light');
+  store.set('liftiq_tpd_theme', CONF.theme);
+  if (CONF.theme==='dark') b.classList.add('force-dark');
+  if (CONF.theme==='light') b.classList.add('force-light');
+  const lbl = document.getElementById('theme-label');
+  if (lbl) lbl.textContent = CONF.theme==='auto'?'Appearance · auto':(CONF.theme==='dark'?'Appearance · dark':'Appearance · light');
+}
+</script>
+<script>
+/* ═══════════════ RENDER ═══════════════ */
+function render(){
+  renderNav();
+  if (view==='dashboard') renderDashboard();
+  if (view==='platform')  renderPlatform();
+  if (view==='offers')    renderOffers();
+  if (view==='actions')   renderActions();
+  if (view==='meetings')  renderMeetings();
+  if (view==='report')    renderReport();
+  if (view==='settings')  renderSettings();
+}
+
+function renderNav(){
+  const wrap = document.getElementById('nav-platforms');
+  wrap.innerHTML = S.platforms.map(p=>{
+    const t = platformTotals(p);
+    const st = STATUS[p.status]||STATUS.prospecting;
+    return `<button class="ds-nav-item" data-nav="pf-${p.id}" onclick="openPlatform('${p.id}')">
+      <span class="ds-nav-dot" style="background:${st.dot}"></span>
+      <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
+      ${t.openActions?`<span class="nav-count">${t.openActions}</span>`:''}
+    </button>`;
+  }).join('');
+  document.getElementById('nav-count-offers').textContent = allOffers().length;
+  document.getElementById('nav-count-actions').textContent = allActions().filter(a=>!a.done).length;
+  document.getElementById('nav-count-meetings').textContent = allMeetings().length;
+  const rl = document.getElementById('nav-research-link');
+  rl.href = researchUrl('') || '#';
+  if (view==='platform'){
+    const nav = document.querySelector(`.ds-nav-item[data-nav="pf-${curPid}"]`);
+    if (nav) nav.classList.add('active');
+  }
+}
+
+function logoChip(p, size){
+  size = size||36;
+  return `<div class="pf-logo" style="background:${p.color};color:${p.fg||'#fff'};width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px">${esc(p.short||p.name.slice(0,2))}</div>`;
+}
+function statusBadge(k){ const s = STATUS[k]||STATUS.prospecting; return `<span class="badge ${s.cls}">${s.label}</span>`; }
+function offerBadge(k){ const s = OFFER_STATUS[k]||OFFER_STATUS.queued; return `<span class="badge ${s.cls}">${s.label}</span>`; }
+
+/* ───────────── DASHBOARD ───────────── */
+function renderDashboard(){
+  const openA = allActions().filter(a=>!a.done);
+
+  document.getElementById('view-dashboard').innerHTML = `
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></div>
+      <div><h2>Platform pipeline</h2><div class="sh-sub">Development progress, contact status and P&amp;L per traffic source</div></div>
+      <div class="sh-actions"><button class="toolbar-btn xs" onclick="editPlatform()">+ Add platform</button></div>
+    </div>
+    <div class="section-body">
+      <div class="pf-grid">${S.platforms.slice().sort((a,b)=>(STATUS[b.status].order-STATUS[a.status].order)||a.name.localeCompare(b.name)).map(pfCard).join('')}</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="align-items:start">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon icon-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div><h2>Next steps</h2><div class="sh-sub">Soonest first</div></div>
+        <div class="sh-actions"><button class="toolbar-btn xs" onclick="go('actions')">See all</button></div>
+      </div>
+      <div class="section-body flush">${
+        openA.length ? openA.sort(sortByDue).slice(0,8).map(a=>actionRow(a,true)).join('')
+        : `<div class="empty"><div class="empty-title">Nothing open</div><div class="empty-sub">Add an action item from any platform to start tracking next steps.</div></div>`
+      }</div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+        <div><h2>Meeting cadence</h2><div class="sh-sub">Standing calls with platform reps</div></div>
+      </div>
+      <div class="section-body flush"><div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Platform</th><th>Contact</th><th>Cadence</th><th>Next call</th></tr></thead>
+        <tbody>${S.platforms.map(p=>`
+          <tr style="cursor:pointer" onclick="openPlatform('${p.id}','meetings')">
+            <td><div style="display:flex;align-items:center;gap:8px">${logoChip(p,22)}<b>${esc(p.name)}</b></div></td>
+            <td>${p.poc.name?esc(p.poc.name):'<span style="color:var(--coral-text);font-weight:600">No POC yet</span>'}</td>
+            <td>${p.poc.cadence?esc(p.poc.cadence)+(p.poc.meetingDay?' · '+esc(p.poc.meetingDay):''):'—'}</td>
+            <td>${p.poc.nextMeeting?niceDate(p.poc.nextMeeting):'—'}</td>
+          </tr>`).join('')}</tbody>
+      </table></div></div>
+    </div>
+  </div>`;
+}
+
+function pfCard(p){
+  const t = platformTotals(p);
+  const st = STATUS[p.status]||STATUS.prospecting;
+  const nextAction = p.actions.filter(a=>!a.done).sort(sortByDue)[0];
+  return `<div class="pf-card" onclick="openPlatform('${p.id}')">
+    <div class="pf-card-top">
+      ${logoChip(p)}
+      <div style="flex:1;min-width:0">
+        <div class="pf-name">${esc(p.name)}</div>
+        <div class="pf-meta">${esc(p.category||'—')} · ${esc(p.accessModel||'')}</div>
+      </div>
+      ${statusBadge(p.status)}
+    </div>
+    <div class="pf-card-body">
+      <div class="pf-progress-track"><div class="pf-progress-fill" style="width:${t.progress}%"></div></div>
+      <div class="pf-progress-label"><span>${t.stagesDone}/${t.stagesTotal} stages</span><span>${t.progress}%</span></div>
+    </div>
+    <div class="pf-stats">
+      <div class="pf-stat"><div class="pf-stat-v ${pnlClass(t.profit)}">${t.offers?money(t.profit):'—'}</div><div class="pf-stat-l">P&amp;L</div></div>
+      <div class="pf-stat"><div class="pf-stat-v">${t.offers}</div><div class="pf-stat-l">Offers</div></div>
+      <div class="pf-stat"><div class="pf-stat-v">${t.openActions}</div><div class="pf-stat-l">Open</div></div>
+    </div>
+    ${nextAction ? `<div class="pf-next">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>Next:</b> ${esc(nextAction.text)}</span></div>`
+    : `<div class="pf-next" style="color:var(--text-muted)">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>No next step set</div>`}
+  </div>`;
+}
+function sortByDue(a,b){
+  if (!a.due && !b.due) return 0; if (!a.due) return 1; if (!b.due) return -1;
+  return a.due.localeCompare(b.due);
+}
+
+/* ───────────── PLATFORM DETAIL ───────────── */
+function renderPlatform(){
+  const p = P(curPid); if(!p){ go('dashboard'); return; }
+  const t = platformTotals(p);
+  document.getElementById('page-title').textContent = p.name;
+  document.getElementById('page-subtitle').textContent = (p.category||'') + (p.accessModel?' · '+p.accessModel:'');
+
+  const tabs = [
+    ['overview','Overview',''],
+    ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
+    ['offers','Offers & tests', p.offers.length||''],
+    ['actions','Action items', t.openActions||''],
+    ['meetings','Meeting notes', p.meetings.length||''],
+    ['kpis','KPIs', p.kpis.length||'']
+  ];
+
+  document.getElementById('view-platform').innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;flex-wrap:wrap">
+      ${logoChip(p,44)}
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+          <h2 style="font-size:19px;font-weight:700;letter-spacing:-.3px">${esc(p.name)}</h2>
+          ${statusBadge(p.status)}
+          <span class="badge b-grey">${PRIORITY[p.priority]||''}</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-secondary);margin-top:3px">
+          ${p.poc.name ? `${esc(p.poc.name)}${p.poc.role?' · '+esc(p.poc.role):''}${p.poc.cadence?' · '+esc(p.poc.cadence)+' call':''}`
+                       : '<span style="color:var(--coral-text);font-weight:600">No point of contact yet</span>'}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="toolbar-btn" onclick="editPlatform('${p.id}')">Edit platform</button>
+        <button class="toolbar-btn primary" onclick="editAction('${p.id}')">+ Action item</button>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Platform P&amp;L</div>
+        <div class="stat-value ${pnlClass(t.profit)}">${t.offers?money(t.profit):'—'}</div>
+        <div class="stat-sub">${money(t.rev)} rev · ${money(t.spend)} spend${t.spend>0?' · '+pct(t.roi)+' ROI':''}</div></div>
+      <div class="stat-card"><div class="stat-label">Development progress</div>
+        <div class="stat-value">${t.progress}%</div>
+        <div class="stat-sub">${t.stagesDone} of ${t.stagesTotal} stages complete</div></div>
+      <div class="stat-card"><div class="stat-label">Offers</div>
+        <div class="stat-value">${t.offers}</div>
+        <div class="stat-sub">${t.tested} tested · ${t.untested} not tested</div></div>
+      <div class="stat-card"><div class="stat-label">Next call</div>
+        <div class="stat-value" style="font-size:17px">${p.poc.nextMeeting?niceDate(p.poc.nextMeeting):'Not set'}</div>
+        <div class="stat-sub">${p.poc.cadence?esc(p.poc.cadence):'No cadence agreed'}${p.poc.meetingDay?' · '+esc(p.poc.meetingDay):''}</div></div>
+    </div>
+
+    <div class="tabs">${tabs.map(([k,l,c])=>`<button class="tab ${curTab===k?'active':''}" onclick="setTab('${k}')">${l}${c!==''?`<span class="tab-count">${c}</span>`:''}</button>`).join('')}</div>
+    <div id="tab-content"></div>`;
+  renderTab();
+}
+function setTab(t){ curTab=t; renderPlatform(); }
+
+function renderTab(){
+  const p = P(curPid), el = document.getElementById('tab-content');
+  if (curTab==='overview') el.innerHTML = tabOverview(p);
+  if (curTab==='plan')     el.innerHTML = tabPlan(p);
+  if (curTab==='offers')   el.innerHTML = tabOffers(p);
+  if (curTab==='actions')  el.innerHTML = tabActions(p);
+  if (curTab==='meetings') el.innerHTML = tabMeetings(p);
+  if (curTab==='kpis')     el.innerHTML = tabKpis(p);
+}
+
+function kvRow(k,v,mono){
+  return `<div class="kv"><div class="kv-k">${k}</div><div class="kv-v" style="${mono?'font-family:ui-monospace,monospace;font-size:12px':''}${v?'':'color:var(--text-muted)'}">${v?esc(v).replace(/\n/g,'<br>'):'—'}</div></div>`;
+}
+
+function tabOverview(p){
+  const s = p.strategy;
+  return `
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
+          <div><h2>Strategy</h2><div class="sh-sub">Why this platform, and what winning looks like</div></div>
+          <div class="sh-actions"><button class="toolbar-btn xs" onclick="editStrategy('${p.id}')">Edit</button></div></div>
+        <div class="section-body">
+          ${kvRow('Objective', s.objective)}
+          ${kvRow('Why it fits', s.whyFit)}
+          ${kvRow('Verticals', s.verticals)}
+          ${kvRow('Geos', s.geos)}
+          ${kvRow('Spend target', s.spendTarget)}
+          ${kvRow('Creative formats', s.formats)}
+          ${kvRow('Constraints &amp; policy', s.constraints)}
+          ${kvRow('Spy / research notes', s.spyNotes)}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M2 12h20"/></svg></div>
+          <div><h2>Commercials &amp; tracking</h2></div>
+          <div class="sh-actions"><button class="toolbar-btn xs" onclick="editStrategy('${p.id}')">Edit</button></div></div>
+        <div class="section-body">
+          ${kvRow('Minimum deposit', s.minDeposit)}
+          ${kvRow('Payment terms', s.payment)}
+          ${kvRow('Tracking setup', s.tracking)}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div><h2>Point of contact</h2></div>
+          <div class="sh-actions"><button class="toolbar-btn xs" onclick="editPoc('${p.id}')">Edit</button></div></div>
+        <div class="section-body">
+          ${p.poc.name ? `
+            ${kvRow('Name', p.poc.name)}
+            ${kvRow('Role', p.poc.role)}
+            ${kvRow('Email', p.poc.email)}
+            ${kvRow('Telegram / IM', p.poc.telegram)}
+            ${kvRow('Timezone', p.poc.timezone)}
+            ${kvRow('Cadence', (p.poc.cadence||'') + (p.poc.meetingDay?' · '+p.poc.meetingDay:''))}
+            ${kvRow('Next call', p.poc.nextMeeting?niceDate(p.poc.nextMeeting):'')}
+          ` : `
+            <div style="background:var(--coral-bg);color:var(--coral-text);border-radius:var(--radius-md);padding:11px 13px;font-size:12.5px;font-weight:500;margin-bottom:14px">
+              No point of contact yet — this is the blocker for everything downstream.</div>
+            ${kvRow('Route to a POC', p.poc.path)}
+            <button class="toolbar-btn primary" style="margin-top:12px" onclick="editPoc('${p.id}')">Add contact details</button>
+          `}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M2 13l5-4 4 4 3-3 4 3"/></svg></div>
+          <div><h2>Creative research</h2><div class="sh-sub">Linked boards in the research tool</div></div>
+          <div class="sh-actions"><button class="toolbar-btn xs" onclick="editResearch('${p.id}')">+ Link</button></div></div>
+        <div class="section-body ${p.research.length?'flush':''}">
+          ${p.research.length ? p.research.map(r=>`
+            <div class="ai-row">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:.5;flex-shrink:0;margin-top:2px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
+              <div class="ai-text"><a class="link" href="${esc(researchUrl(r.slug))}" target="_blank" rel="noopener">${esc(r.label||r.slug)}</a>
+                <div class="ai-tags"><span class="ai-tag">${esc(researchUrl(r.slug))}</span></div></div>
+              <div class="row-actions"><button class="icon-btn danger" onclick="delResearch('${p.id}','${r.id}')" title="Remove">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button></div>
+            </div>`).join('')
+          : `<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6">No research boards linked yet. Paste the slug from the Multi-Platform Creative Research tool — e.g. <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:4px">obd-fuel</code> — and it becomes a one-click jump.</div>`}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-grey"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div><h2>Working notes</h2></div></div>
+        <div class="section-body">
+          <textarea class="inp" style="min-height:170px;font-size:12.5px;line-height:1.65" placeholder="Thoughts, rep questions, hypotheses, anything not structured elsewhere…"
+            oninput="P('${p.id}').notes=this.value;save()">${esc(p.notes)}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function tabPlan(p){
+  const t = platformTotals(p);
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div><h2>Development plan</h2><div class="sh-sub">${t.stagesDone} of ${t.stagesTotal} complete · tick a stage and note what actually happened</div></div>
+      <div class="sh-actions"><button class="toolbar-btn xs" onclick="addStage('${p.id}')">+ Stage</button></div>
+    </div>
+    <div class="section-body" style="padding-bottom:0">
+      <div class="pf-progress-track" style="height:6px"><div class="pf-progress-fill" style="width:${t.progress}%"></div></div>
+    </div>
+    <div class="stage-list" style="margin-top:12px">
+      ${p.stages.map((s,i)=>`
+        <div class="stage-row ${s.done?'is-done':''}">
+          <span class="stage-num">${String(i+1).padStart(2,'0')}</span>
+          <button class="stage-check ${s.done?'done':''}" onclick="toggleStage('${p.id}','${s.id}')" aria-label="Toggle">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+          </button>
+          <div class="stage-main">
+            <div class="stage-title">${esc(s.label)}</div>
+            ${s.hint?`<div class="stage-note" style="color:var(--text-muted);font-size:11.5px">${esc(s.hint)}</div>`:''}
+            <textarea class="stage-note-edit" placeholder="What happened, what's blocking, who owes what…"
+              oninput="setStageNote('${p.id}','${s.id}',this.value)">${esc(s.note)}</textarea>
+          </div>
+          <div class="row-actions" style="opacity:1">
+            <button class="icon-btn" onclick="moveStage('${p.id}','${s.id}',-1)" title="Move up" ${i===0?'disabled style="opacity:.35;cursor:default"':''}>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg></button>
+            <button class="icon-btn" onclick="moveStage('${p.id}','${s.id}',1)" title="Move down" ${i===p.stages.length-1?'disabled style="opacity:.35;cursor:default"':''}>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button>
+            <button class="icon-btn" onclick="editStage('${p.id}','${s.id}')" title="Edit stage name / description">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+            <button class="icon-btn danger" onclick="delStage('${p.id}','${s.id}')" title="Delete stage">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function offerRowsHtml(list, showPlatform){
+  return list.map(o=>{
+    const t = offerPnl(o);
+    const untested = o.status==='not_tested'||o.status==='queued';
+    return `<tr>
+      ${showPlatform?`<td><div style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:${o.pcolor};flex-shrink:0"></span>${esc(o.pname)}</div></td>`:''}
+      <td><div style="font-weight:600">${esc(o.name)}</div>
+        ${o.reason&&untested?`<div style="font-size:11px;color:var(--amber-text);margin-top:2px">${esc(o.reason)}</div>`:''}
+        ${o.notes&&!untested?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(o.notes)}</div>`:''}</td>
+      <td>${esc(o.vertical||'—')}</td>
+      <td>${esc(o.geo||'—')}</td>
+      <td>${offerBadge(o.status)}</td>
+      <td style="white-space:nowrap;color:var(--text-secondary);font-size:11.5px">${o.launched?niceDate(o.launched):'—'}</td>
+      <td class="num">${untested&&!t.spend?'—':money(t.spend)}</td>
+      <td class="num">${untested&&!t.rev?'—':money(t.rev)}</td>
+      <td class="num ${pnlClass(t.profit)}">${untested&&!t.spend&&!t.rev?'—':money(t.profit)}</td>
+      <td class="num ${pnlClass(t.profit)}">${t.spend>0?pct(t.roi):'—'}</td>
+      <td style="width:88px"><div class="row-actions">
+        ${o.researchSlug?`<a class="icon-btn" href="${esc(researchUrl(o.researchSlug))}" target="_blank" rel="noopener" title="Open creative research">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9"/><path d="M10 2h4v4M14 2 8 8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>`:''}
+        <button class="icon-btn" onclick="editOffer('${o.pid||curPid}','${o.id}')" title="Edit">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+        <button class="icon-btn danger" onclick="delOffer('${o.pid||curPid}','${o.id}')" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+function totalsRow(list, cols){
+  const sp = list.reduce((a,o)=>a+(Number(o.spend)||0),0);
+  const rv = list.reduce((a,o)=>a+(Number(o.revenue)||0),0);
+  const pf = rv-sp, roi = sp>0?(pf/sp)*100:0;
+  return `<tr style="background:var(--bg-secondary);font-weight:700">
+    <td colspan="${cols}" style="text-transform:uppercase;font-size:10px;letter-spacing:.06em;color:var(--text-muted)">Total · ${list.length} offer${list.length===1?'':'s'}</td>
+    <td class="num">${money(sp)}</td><td class="num">${money(rv)}</td>
+    <td class="num ${pnlClass(pf)}">${money(pf)}</td>
+    <td class="num ${pnlClass(pf)}">${sp>0?pct(roi):'—'}</td><td></td></tr>`;
+}
+
+function tabOffers(p){
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+      <div><h2>Offers &amp; tests</h2><div class="sh-sub">What we brought to ${esc(p.name)} and what it returned</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editOffer('${p.id}')">+ Add offer</button></div>
+    </div>
+    ${p.offers.length?`<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Offer</th><th>Vertical</th><th>Geo</th><th>Status</th><th>Launched</th>
+        <th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th>
+        <th style="text-align:right">P&amp;L</th><th style="text-align:right">ROI</th><th></th></tr></thead>
+      <tbody>${offerRowsHtml(p.offers.map(o=>({...o,pid:p.id})),false)}${totalsRow(p.offers,5)}</tbody>
+    </table></div>`
+    :`<div class="empty"><div class="empty-title">No offers logged</div>
+      <div class="empty-sub">Add every offer you bring to this platform — including the ones that never ran, with the reason why.</div>
+      <button class="toolbar-btn primary" onclick="editOffer('${p.id}')">Add the first offer</button></div>`}
+  </div>`;
+}
+
+function actionRow(a, showPlatform){
+  const d = dueMeta(a.due);
+  return `<div class="ai-row ${a.done?'is-done':''}">
+    <button class="stage-check ${a.done?'done':''}" onclick="toggleAction('${a.pid}','${a.id}')" aria-label="Toggle">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg></button>
+    <div class="ai-text">${esc(a.text)}
+      <div class="ai-tags">
+        ${showPlatform?`<span class="ai-tag"><span style="width:7px;height:7px;border-radius:50%;background:${a.pcolor};display:inline-block"></span>${esc(a.pname)}</span>`:''}
+        ${a.owner?`<span class="ai-tag">· ${esc(a.owner)}</span>`:''}
+        ${a.due?`<span class="ai-tag ${a.done?'':d.cls}">· ${a.done?('Was due '+a.due):d.txt}</span>`:''}
+      </div></div>
+    <div class="row-actions">
+      <button class="icon-btn" onclick="editAction('${a.pid}','${a.id}')" title="Edit">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+      <button class="icon-btn danger" onclick="delAction('${a.pid}','${a.id}')" title="Delete">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+    </div></div>`;
+}
+
+function tabActions(p){
+  const open = p.actions.filter(a=>!a.done).sort(sortByDue).map(a=>({...a,pid:p.id}));
+  const done = p.actions.filter(a=>a.done).map(a=>({...a,pid:p.id}));
+  return `
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div><h2>Open</h2><div class="sh-sub">${open.length} item${open.length===1?'':'s'}</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editAction('${p.id}')">+ Add</button></div>
+    </div>
+    <div class="section-body flush">${open.length?open.map(a=>actionRow(a,false)).join('')
+      :`<div class="empty"><div class="empty-title">Nothing open</div><div class="empty-sub">Add the next concrete step for ${esc(p.name)}.</div></div>`}</div>
+  </div>
+  ${done.length?`<div class="section">
+    <div class="section-header"><div class="section-icon icon-grey"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <div><h2>Completed</h2><div class="sh-sub">${done.length} item${done.length===1?'':'s'}</div></div></div>
+    <div class="section-body flush">${done.map(a=>actionRow(a,false)).join('')}</div>
+  </div>`:''}`;
+}
+
+function meetingCard(m, showPlatform){
+  return `<div class="mt-entry">
+    <div class="mt-head">
+      <span class="mt-date">${niceDate(m.date)}</span>
+      ${showPlatform?`<span class="badge b-grey">${esc(m.pname)}</span>`:''}
+      ${m.attendees?`<span class="mt-who">${esc(m.attendees)}</span>`:''}
+      <div style="margin-left:auto" class="row-actions">
+        <button class="icon-btn" onclick="editMeeting('${m.pid}','${m.id}')" title="Edit">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+        <button class="icon-btn danger" onclick="delMeeting('${m.pid}','${m.id}')" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+      </div>
+    </div>
+    ${m.notes?`<div class="mt-body">${esc(m.notes)}</div>`:''}
+    ${m.decisions?`<div class="mt-body" style="margin-top:9px;padding:10px 12px;background:var(--teal-bg);color:var(--teal-text);border-radius:var(--radius-md)"><strong style="color:inherit">Agreed:</strong> ${esc(m.decisions)}</div>`:''}
+  </div>`;
+}
+
+function tabMeetings(p){
+  const ms = p.meetings.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(m=>({...m,pid:p.id,pname:p.name}));
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+      <div><h2>Meeting notes</h2><div class="sh-sub">${p.poc.cadence?esc(p.poc.cadence)+' call':'No cadence set'}${p.poc.name?' with '+esc(p.poc.name):''}</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editMeeting('${p.id}')">+ Log meeting</button></div>
+    </div>
+    <div class="section-body flush">${ms.length?ms.map(m=>meetingCard(m,false)).join('')
+      :`<div class="empty"><div class="empty-title">No meetings logged</div>
+        <div class="empty-sub">Log what was discussed, what was agreed, and who owes what. Agreed items become action items.</div>
+        <button class="toolbar-btn primary" onclick="editMeeting('${p.id}')">Log the first meeting</button></div>`}</div>
+  </div>`;
+}
+
+function tabKpis(p){
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-coral"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+      <div><h2>KPIs</h2><div class="sh-sub">What this platform is being measured on</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editKpi('${p.id}')">+ Add KPI</button></div>
+    </div>
+    ${p.kpis.length?`<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Metric</th><th>Period</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th>Status</th><th></th></tr></thead>
+      <tbody>${p.kpis.map(k=>{
+        const tg=parseFloat(k.target), ac=parseFloat(k.actual);
+        let badge='<span class="badge b-grey">No data</span>';
+        if(!isNaN(tg)&&!isNaN(ac)){ const hit = k.lowerBetter ? ac<=tg : ac>=tg;
+          badge = hit?'<span class="badge b-teal">On target</span>':'<span class="badge b-coral">Behind</span>'; }
+        return `<tr><td><b>${esc(k.metric)}</b>${k.note?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(k.note)}</div>`:''}</td>
+          <td>${esc(k.period||'—')}</td><td class="num">${esc(k.target||'—')}</td><td class="num">${esc(k.actual||'—')}</td>
+          <td>${badge}</td>
+          <td style="width:70px"><div class="row-actions">
+            <button class="icon-btn" onclick="editKpi('${p.id}','${k.id}')"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+            <button class="icon-btn danger" onclick="delKpi('${p.id}','${k.id}')"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+          </div></td></tr>`;}).join('')}</tbody></table></div>`
+    :`<div class="empty"><div class="empty-title">No KPIs set</div>
+      <div class="empty-sub">Typical starters: monthly spend, blended ROI, CPL, approved offers, time to first test.</div>
+      <button class="toolbar-btn primary" onclick="editKpi('${p.id}')">Add a KPI</button></div>`}
+  </div>`;
+}
+</script>
+<script>
+/* ───────────── GLOBAL OFFERS ───────────── */
+let oF = { q:'', platform:'', status:'', vertical:'' };
+function setOF(k,v){ oF[k]=v; renderOffers(); }
+function renderOffers(){
+  let list = allOffers();
+  const verticals = [...new Set(allOffers().map(o=>o.vertical).filter(Boolean))].sort();
+  if (oF.q) { const q=oF.q.toLowerCase();
+    list = list.filter(o=>[o.name,o.vertical,o.geo,o.notes,o.reason,o.pname].some(x=>String(x||'').toLowerCase().includes(q))); }
+  if (oF.platform) list = list.filter(o=>o.pid===oF.platform);
+  if (oF.status)   list = list.filter(o=>o.status===oF.status);
+  if (oF.vertical) list = list.filter(o=>o.vertical===oF.vertical);
+  list.sort((a,b)=>(b.launched||'').localeCompare(a.launched||''));
+
+  const all = allOffers();
+  const sp = all.reduce((a,o)=>a+(Number(o.spend)||0),0);
+  const rv = all.reduce((a,o)=>a+(Number(o.revenue)||0),0);
+  const win = all.filter(o=>offerPnl(o).profit>0).length;
+  const lose= all.filter(o=>offerPnl(o).profit<0 && offerPnl(o).spend>0).length;
+  const nt  = all.filter(o=>o.status==='not_tested'||o.status==='queued').length;
+
+  document.getElementById('view-offers').innerHTML = `
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Net P&amp;L</div>
+      <div class="stat-value ${pnlClass(rv-sp)}">${money(rv-sp)}</div>
+      <div class="stat-sub">${money(rv)} revenue − ${money(sp)} spend</div></div>
+    <div class="stat-card"><div class="stat-label">Profitable</div>
+      <div class="stat-value pos">${win}</div><div class="stat-sub">offers in the black</div></div>
+    <div class="stat-card"><div class="stat-label">Unprofitable</div>
+      <div class="stat-value neg">${lose}</div><div class="stat-sub">spent and did not return</div></div>
+    <div class="stat-card"><div class="stat-label">Never tested</div>
+      <div class="stat-value">${nt}</div><div class="stat-sub">each needs a documented reason</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+      <div><h2>All offers</h2><div class="sh-sub">Across every traffic platform</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="openQuickAdd('offer')">+ Add offer</button></div>
+    </div>
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M11 11l3 3" stroke-linecap="round"/></svg>
+        <input id="offers-search" placeholder="Search offers…" value="${esc(oF.q)}" oninput="oF.q=this.value;renderOffersTable()">
+      </div>
+      <select class="inp" onchange="setOF('platform',this.value)">
+        <option value="">All platforms</option>
+        ${S.platforms.map(p=>`<option value="${p.id}" ${oF.platform===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+      </select>
+      <select class="inp" onchange="setOF('status',this.value)">
+        <option value="">All statuses</option>
+        ${Object.entries(OFFER_STATUS).map(([k,v])=>`<option value="${k}" ${oF.status===k?'selected':''}>${v.label}</option>`).join('')}
+      </select>
+      <select class="inp" onchange="setOF('vertical',this.value)">
+        <option value="">All verticals</option>
+        ${verticals.map(v=>`<option ${oF.vertical===v?'selected':''}>${esc(v)}</option>`).join('')}
+      </select>
+      ${(oF.q||oF.platform||oF.status||oF.vertical)?`<button class="toolbar-btn xs" onclick="oF={q:'',platform:'',status:'',vertical:''};renderOffers()">Clear filters</button>`:''}
+      <span style="margin-left:auto;font-size:11px;color:var(--text-muted)" id="offers-count">${list.length} of ${all.length}</span>
+    </div>
+    <div id="offers-table">${list.length?`<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Platform</th><th>Offer</th><th>Vertical</th><th>Geo</th><th>Status</th><th>Launched</th>
+        <th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th>
+        <th style="text-align:right">P&amp;L</th><th style="text-align:right">ROI</th><th></th></tr></thead>
+      <tbody>${offerRowsHtml(list,true)}${totalsRow(list,6)}</tbody></table></div>`
+    :`<div class="empty"><div class="empty-title">${all.length?'No offers match these filters':'No offers logged yet'}</div>
+      <div class="empty-sub">${all.length?'Try clearing a filter.':'Log every offer you place with a platform — including ones that never ran.'}</div></div>`}</div>
+  </div>`;
+}
+function filteredOffers(){
+  let list = allOffers();
+  if (oF.q) { const q=oF.q.toLowerCase();
+    list = list.filter(o=>[o.name,o.vertical,o.geo,o.notes,o.reason,o.pname].some(x=>String(x||'').toLowerCase().includes(q))); }
+  if (oF.platform) list = list.filter(o=>o.pid===oF.platform);
+  if (oF.status)   list = list.filter(o=>o.status===oF.status);
+  if (oF.vertical) list = list.filter(o=>o.vertical===oF.vertical);
+  return list.sort((a,b)=>(b.launched||'').localeCompare(a.launched||''));
+}
+function renderOffersTable(){
+  const list = filteredOffers(), all = allOffers();
+  const wrap = document.getElementById('offers-table');
+  const cnt = document.getElementById('offers-count');
+  if (cnt) cnt.textContent = `${list.length} of ${all.length}`;
+  if (!wrap) return;
+  wrap.innerHTML = list.length ? `<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Platform</th><th>Offer</th><th>Vertical</th><th>Geo</th><th>Status</th><th>Launched</th>
+        <th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th>
+        <th style="text-align:right">P&amp;L</th><th style="text-align:right">ROI</th><th></th></tr></thead>
+      <tbody>${offerRowsHtml(list,true)}${totalsRow(list,6)}</tbody></table></div>`
+    : `<div class="empty"><div class="empty-title">${all.length?'No offers match these filters':'No offers logged yet'}</div>
+      <div class="empty-sub">${all.length?'Try clearing a filter.':'Log every offer you place with a platform.'}</div></div>`;
+}
+
+/* ───────────── GLOBAL ACTIONS ───────────── */
+let aShowDone = false;
+function renderActions(){
+  const all = allActions();
+  const open = all.filter(a=>!a.done).sort(sortByDue);
+  const done = all.filter(a=>a.done);
+  const overdue = open.filter(a=>a.due && a.due<today());
+  const week = open.filter(a=>a.due && a.due>=today() && a.due<=new Date(Date.now()+7*864e5).toISOString().slice(0,10));
+  const noDate = open.filter(a=>!a.due);
+
+  const group = (title, items, cls) => items.length?`<div class="section">
+    <div class="section-header"><div class="section-icon ${cls}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div><h2>${title}</h2><div class="sh-sub">${items.length} item${items.length===1?'':'s'}</div></div></div>
+    <div class="section-body flush">${items.map(a=>actionRow(a,true)).join('')}</div></div>`:'';
+
+  document.getElementById('view-actions').innerHTML = `
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value">${open.length}</div><div class="stat-sub">across ${new Set(open.map(a=>a.pid)).size} platforms</div></div>
+    <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-value ${overdue.length?'neg':'pos'}">${overdue.length}</div><div class="stat-sub">past their due date</div></div>
+    <div class="stat-card"><div class="stat-label">Due this week</div><div class="stat-value">${week.length}</div><div class="stat-sub">next seven days</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value">${done.length}</div><div class="stat-sub">all time</div></div>
+  </div>
+  ${group('Overdue', overdue, 'icon-coral')}
+  ${group('Due this week', week, 'icon-amber')}
+  ${group('Later', open.filter(a=>a.due && a.due>new Date(Date.now()+7*864e5).toISOString().slice(0,10)), 'icon-blue')}
+  ${group('No due date', noDate, 'icon-grey')}
+  ${!open.length?`<div class="section"><div class="empty"><div class="empty-title">Nothing open</div>
+    <div class="empty-sub">Every platform is clear. Add the next step from any platform page.</div></div></div>`:''}
+  ${done.length?`<div class="section">
+    <div class="section-header"><div class="section-icon icon-grey"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <div><h2>Completed</h2><div class="sh-sub">${done.length} item${done.length===1?'':'s'}</div></div>
+      <div class="sh-actions"><button class="toolbar-btn xs" onclick="aShowDone=!aShowDone;renderActions()">${aShowDone?'Hide':'Show'}</button></div></div>
+    ${aShowDone?`<div class="section-body flush">${done.map(a=>actionRow(a,true)).join('')}</div>`:''}
+  </div>`:''}`;
+}
+
+/* ───────────── GLOBAL MEETINGS ───────────── */
+let mFilter = '';
+function renderMeetings(){
+  let ms = allMeetings();
+  if (mFilter) ms = ms.filter(m=>m.pid===mFilter);
+  document.getElementById('view-meetings').innerHTML = `
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+      <div><h2>Meeting log</h2><div class="sh-sub">Newest first</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="openQuickAdd('meeting')">+ Log meeting</button></div>
+    </div>
+    <div class="filter-bar">
+      <select class="inp" onchange="mFilter=this.value;renderMeetings()">
+        <option value="">All platforms</option>
+        ${S.platforms.map(p=>`<option value="${p.id}" ${mFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}
+      </select>
+      <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">${ms.length} entr${ms.length===1?'y':'ies'}</span>
+    </div>
+    <div class="section-body flush">${ms.length?ms.map(m=>meetingCard(m,true)).join('')
+      :`<div class="empty"><div class="empty-title">No meetings logged</div>
+        <div class="empty-sub">Log each rep call here so the history lives in one place.</div></div>`}</div>
+  </div>`;
+}
+
+/* ───────────── WEEKLY REPORT ───────────── */
+function buildReport(){
+  const d = new Date();
+  const L = [];
+  L.push(`TRAFFIC PLATFORM DEVELOPMENT — WEEKLY UPDATE`);
+  L.push(`${CONF.team} · ${CONF.owner} · ${d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}`);
+  L.push('');
+
+  const tot = S.platforms.reduce((a,p)=>{const t=platformTotals(p);a.s+=t.spend;a.r+=t.rev;return a;},{s:0,r:0});
+  const profit = tot.r-tot.s;
+  L.push('── HEADLINE ──');
+  L.push(`Net P&L: ${money(profit)}  (${money(tot.r)} revenue on ${money(tot.s)} spend${tot.s>0?', '+pct(profit/tot.s*100)+' ROI':''})`);
+  L.push(`Platforms: ${S.platforms.filter(p=>p.status==='scaling').length} scaling · ${S.platforms.filter(p=>p.status==='testing').length} testing · ${S.platforms.filter(p=>['prospecting','contact','onboarding'].includes(p.status)).length} in development`);
+  const noPoc = S.platforms.filter(p=>!p.poc.name);
+  if (noPoc.length) L.push(`Still without a POC: ${noPoc.map(p=>p.name).join(', ')}`);
+  L.push('');
+
+  S.platforms.slice().sort((a,b)=>STATUS[b.status].order-STATUS[a.status].order).forEach(p=>{
+    const t = platformTotals(p);
+    L.push(`── ${p.name.toUpperCase()} — ${STATUS[p.status].label} (${t.progress}% developed) ──`);
+    if (p.strategy.objective) L.push(`Objective: ${p.strategy.objective}`);
+    L.push(`Contact: ${p.poc.name?p.poc.name+(p.poc.role?', '+p.poc.role:'')+(p.poc.cadence?' · '+p.poc.cadence+' call':''):'none yet'}`);
+    if (p.offers.length){
+      L.push(`P&L: ${money(t.profit)} (${money(t.rev)} rev / ${money(t.spend)} spend) across ${p.offers.length} offer${p.offers.length===1?'':'s'}`);
+      p.offers.forEach(o=>{ const x=offerPnl(o);
+        const untested = o.status==='not_tested'||o.status==='queued';
+        L.push(`  • ${o.name}${o.geo?' ['+o.geo+']':''} — ${OFFER_STATUS[o.status].label}` +
+          (untested ? (o.reason?` — ${o.reason}`:' — no reason recorded') :
+            ` — ${money(x.profit)}${x.spend>0?' ('+pct(x.roi)+')':''}`));
+      });
+    } else L.push('P&L: no offers placed yet');
+    const recent = p.meetings.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
+    if (recent) L.push(`Last call ${recent.date}: ${(recent.decisions||recent.notes||'').split('\n')[0].slice(0,220)}`);
+    const open = p.actions.filter(a=>!a.done).sort(sortByDue);
+    if (open.length){
+      L.push('Next steps:');
+      open.slice(0,5).forEach(a=>L.push(`  → ${a.text}${a.owner?' ('+a.owner+')':''}${a.due?' — due '+a.due:''}`));
+    } else L.push('Next steps: none logged');
+    L.push('');
+  });
+
+  const overdue = allActions().filter(a=>!a.done && a.due && a.due<today());
+  if (overdue.length){
+    L.push('── OVERDUE ACROSS ALL PLATFORMS ──');
+    overdue.sort(sortByDue).forEach(a=>L.push(`  ! ${a.pname}: ${a.text} — due ${a.due}`));
+    L.push('');
+  }
+  return L.join('\n');
+}
+function renderReport(){
+  const txt = buildReport();
+  document.getElementById('view-report').innerHTML = `
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg></div>
+      <div><h2>Weekly update</h2><div class="sh-sub">Built live from every platform, offer and action item</div></div>
+      <div class="sh-actions">
+        <button class="toolbar-btn xs" onclick="window.print()">Print / PDF</button>
+        <button class="toolbar-btn xs" onclick="downloadText('traffic-platform-update-${today()}.txt', buildReport())">Download</button>
+        <button class="toolbar-btn primary xs" onclick="copyText(buildReport())">Copy to clipboard</button>
+      </div>
+    </div>
+    <div class="section-body"><div class="report-out">${esc(txt)}</div></div>
+  </div>`;
+}
+
+/* ───────────── SETTINGS ───────────── */
+function statusPill(){
+  const map = { connected:['b-teal','Connected'], connecting:['b-amber','Connecting…'], error:['b-coral','Connection error'], idle:['b-grey','Not verified yet'] };
+  const [cls,label] = map[sbState] || map.idle;
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+function renderSettings(){
+  document.getElementById('view-settings').innerHTML = `
+  <div class="grid-2" style="align-items:start">
+    <div>
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div><h2>Identity</h2></div></div>
+        <div class="section-body">
+          <div class="field"><label class="field-label">Your name</label>
+            <input class="inp" value="${esc(CONF.owner)}" oninput="CONF.owner=this.value;save(true)"></div>
+          <div class="field"><label class="field-label">Team / department</label>
+            <input class="inp" value="${esc(CONF.team)}" oninput="CONF.team=this.value;save(true)"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg></div>
+          <div><h2>Linked tools</h2><div class="sh-sub">Where offer and research links point</div></div></div>
+        <div class="section-body">
+          <div class="field"><label class="field-label">Creative research base URL</label>
+            <input class="inp" value="${esc(CONF.researchBase)}" oninput="CONF.researchBase=this.value;save(true)">
+            <div class="hint">Offer research slugs append to this. With <code>obd-fuel</code> as a slug you get <span class="link">${esc(researchUrl('obd-fuel'))}</span></div></div>
+          <div class="field"><label class="field-label">Everflow base URL (optional)</label>
+            <input class="inp" value="${esc(CONF.everflowBase)}" placeholder="https://your-account.everflowclient.io" oninput="CONF.everflowBase=this.value;save(true)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg></div>
+          <div><h2>Cloud sync</h2><div class="sh-sub">Supabase — so the whole team sees the same data</div></div>
+          <div class="sh-actions">${cloudConfigured()?statusPill():''}</div></div>
+        <div class="section-body">
+          ${cloudConfigured() ? `
+            <div class="kv"><div class="kv-k">Project</div><div class="kv-v" style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(CONF.sb.url)}</div></div>
+            <div class="kv"><div class="kv-k">Table / row</div><div class="kv-v">${esc(CONF.sb.table)} · ${esc(CONF.sb.row)}</div></div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <button class="toolbar-btn" onclick="cloudPush()">Push now</button>
+              <button class="toolbar-btn" onclick="cloudPull()">Pull now</button>
+              <button class="toolbar-btn" onclick="openConnectSupabase()">Edit connection</button>
+              <button class="toolbar-btn danger" onclick="disconnectSupabase()">Disconnect</button>
+            </div>
+            <div class="hint">Every save pushes automatically a moment after you stop typing. Pull if a teammate changed something and you want their latest version.</div>
+          ` : `
+            <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
+              Not connected — everything you see is local to this browser only. Connect a Supabase project so this becomes a shared workspace: every teammate who connects with the same project and row id reads and writes the same data.</div>
+            <button class="toolbar-btn primary" onclick="openConnectSupabase()">Connect Supabase</button>
+          `}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></div>
+          <div><h2>Backup &amp; data</h2></div></div>
+        <div class="section-body">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="toolbar-btn" onclick="exportJSON()">Export JSON</button>
+            <button class="toolbar-btn" onclick="exportCSV()">Export offers CSV</button>
+            <button class="toolbar-btn" onclick="document.getElementById('import-input').click()">Import JSON</button>
+            <button class="toolbar-btn danger" onclick="resetAll()">Reset everything</button>
+          </div>
+          <div class="hint" style="margin-top:12px">Data lives in this browser. Export a JSON backup before switching machines, and push to cloud sync if the team needs the same view.</div>
+          <div class="divider"></div>
+          <div class="kv"><div class="kv-k">Platforms</div><div class="kv-v">${S.platforms.length}</div></div>
+          <div class="kv"><div class="kv-k">Offers</div><div class="kv-v">${allOffers().length}</div></div>
+          <div class="kv"><div class="kv-k">Meetings logged</div><div class="kv-v">${allMeetings().length}</div></div>
+          <div class="kv"><div class="kv-k">Last saved</div><div class="kv-v">${new Date(S.updated).toLocaleString()}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ───────────── EXPORT / IMPORT / CLOUD ───────────── */
+function downloadText(name, text, type){
+  const b = new Blob([text], {type:type||'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+}
+function copyText(t){
+  navigator.clipboard.writeText(t).then(()=>toast('Copied to clipboard','success'))
+    .catch(()=>toast('Could not copy — select the text manually','error'));
+}
+function exportJSON(){ downloadText(`traffic-platforms-${today()}.json`, JSON.stringify({state:S,config:CONF},null,2),'application/json'); toast('Backup downloaded','success'); }
+function exportCSV(){
+  const rows = [['Platform','Offer','Vertical','Geo','Status','Launched','Ended','Spend','Revenue','Profit','ROI %','Reason if not tested','Notes']];
+  allOffers().forEach(o=>{ const t=offerPnl(o);
+    rows.push([o.pname,o.name,o.vertical,o.geo,OFFER_STATUS[o.status].label,o.launched,o.ended,t.spend,t.rev,t.profit,
+      t.spend>0?Math.round(t.roi*10)/10:'',o.reason,o.notes]); });
+  const csv = rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadText(`offers-${today()}.csv`, csv, 'text/csv;charset=utf-8'); toast('CSV downloaded','success');
+}
+function importJSON(input){
+  const f = input.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (d.state && d.state.platforms) { S = d.state; if (d.config) CONF = Object.assign(defaultConf(), d.config); }
+      else if (d.platforms) S = d;
+      else throw new Error('bad shape');
+      load2(); save(); render(); toast('Backup restored','success');
+    } catch(err){ toast('That file could not be read','error'); }
+    input.value = '';
+  };
+  r.readAsText(f);
+}
+function load2(){
+  S.platforms.forEach(p=>{ const base = seedPlatform({});
+    ['poc','strategy'].forEach(k=>p[k]=Object.assign({},base[k],p[k]||{}));
+    ['stages','kpis','actions','meetings','offers','research'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
+}
+function resetAll(){
+  confirmModal('Reset everything?','This wipes every platform, offer, meeting note and action item in this browser and restores the starting nine platforms. Export a backup first if you need one.', 'Reset', ()=>{
+    store.del(KEY); S = { version:1, created:Date.now(), updated:Date.now(), platforms:SEED };
+    save(); go('dashboard'); toast('Reset to defaults');
+  }, true);
+}
+function sbBase(){ return CONF.sb.url.replace(/\/+$/,''); }
+function sbHeaders(extra){
+  return Object.assign({ 'apikey':CONF.sb.key, 'Authorization':'Bearer '+CONF.sb.key }, extra||{});
+}
+async function cloudPush(silent){
+  const c = CONF.sb; if(!c.url||!c.key){ if(!silent) toast('Add your Supabase URL and key first','error'); return; }
+  sbState = 'connecting'; if(!silent) dot('saving','Pushing…');
+  try {
+    const res = await fetch(`${sbBase()}/rest/v1/${c.table}`, {
+      method:'POST',
+      headers: sbHeaders({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({ id:c.row, data:{state:S,config:{...CONF, sb:undefined}}, updated_at:new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    sbState = 'connected';
+    dot('saved','Cloud synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+    if(!silent) toast('Pushed to cloud','success');
+  } catch(e){
+    sbState = 'error'; dot('error','Cloud push failed');
+    if(!silent) toast('Push failed — check URL, key and table','error');
+  }
+  if (view==='settings') renderSettings();
+}
+async function cloudPull(silent){
+  const c = CONF.sb; if(!c.url||!c.key){ if(!silent) toast('Add your Supabase URL and key first','error'); return false; }
+  sbState = 'connecting'; if(!silent) dot('saving','Pulling…');
+  try {
+    const res = await fetch(`${sbBase()}/rest/v1/${c.table}?id=eq.${encodeURIComponent(c.row)}&select=data,updated_at`,
+      { headers: sbHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    const j = await res.json();
+    sbState = 'connected';
+    if(!j.length || !j[0].data){
+      if(!silent) toast('Connected — nothing stored in the cloud yet. Push to create it.','success');
+      dot('saved','Cloud connected — no data yet');
+      if (view==='settings') renderSettings();
+      return true;
+    }
+    const d = j[0].data;
+    S = d.state || d; if (d.config) CONF = Object.assign(defaultConf(), d.config, {sb:CONF.sb});
+    load2(); store.set(KEY, JSON.stringify(S)); store.set(CFG, JSON.stringify(CONF));
+    dot('saved','Cloud synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+    render();
+    if(!silent) toast('Pulled from cloud','success');
+    return true;
+  } catch(e){
+    sbState = 'error'; dot('error','Cloud pull failed');
+    if(!silent) toast('Pull failed — check URL, key and table','error');
+    if (view==='settings') renderSettings();
+    return false;
+  }
+}
+async function connectSupabase(){
+  const url = V('f-sburl'), key = V('f-sbkey'), table = V('f-sbtable')||'tpd_state', row = V('f-sbrow')||'main';
+  if (!url || !key) { toast('Add both the project URL and the anon key','error'); return; }
+  CONF.sb = { url, key, table, row };
+  closeModal();
+  toast('Connecting…');
+  const ok = await cloudPull(true);
+  save(true);
+  render();
+  if (ok) toast('Supabase connected','success');
+}
+function openConnectSupabase(){
+  const c = CONF.sb;
+  openModal({ title:'Connect Supabase', sub:'Share this workspace with your team', icon:'icon-teal', wide:true,
+    body:`<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">
+        Create a free Supabase project, run the table setup below once in its SQL editor, then paste the project URL and anon key here. Everyone who connects with the same values sees the same data.</div>
+      <div class="grid-2">
+        ${fld('Project URL','f-sburl',c.url,{ph:'https://xxxx.supabase.co'})}
+        ${fld('Anon key','f-sbkey',c.key,{type:'password'})}
+        ${fld('Table','f-sbtable',c.table||'tpd_state')}
+        ${fld('Row id','f-sbrow',c.row||'main',{hint:'Everyone on the team should use the same row id.'})}
+      </div>
+      <div class="md-section-divider">
+        <div class="md-label" style="margin-bottom:8px">One-time table setup — run in Supabase SQL editor</div>
+        <div class="report-out" style="max-height:none;font-size:11px">create table tpd_state (
+  id text primary key,
+  data jsonb,
+  updated_at timestamptz default now()
+);
+alter table tpd_state enable row level security;
+create policy "rw" on tpd_state for all using (true) with check (true);</div>
+      </div>`,
+    footer:`<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
+      <button class="toolbar-btn primary" onclick="connectSupabase()">Connect</button>` });
+}
+function disconnectSupabase(){
+  confirmModal('Disconnect Supabase?','This stops syncing to the cloud. Your local data stays exactly as it is.', 'Disconnect', ()=>{
+    CONF.sb = { url:'', key:'', table:'tpd_state', row:'main' }; sbState='idle';
+    save(true); dot('saved','Saved locally'); renderSettings(); toast('Disconnected');
+  });
+}
+async function initCloudSync(){
+  if (!cloudConfigured()) return;
+  await cloudPull(true);
+}
+</script>
+<script>
+/* ═══════════════ MODAL ENGINE ═══════════════ */
+function openModal({title, sub, icon, body, footer, wide}){
+  document.getElementById('modal-title').textContent = title||'';
+  document.getElementById('modal-sub').textContent = sub||'';
+  document.getElementById('modal-icon').className = 'md-icon ' + (icon||'icon-blue');
+  document.getElementById('modal-body').innerHTML = body||'';
+  document.getElementById('modal-footer').innerHTML = footer||'';
+  document.getElementById('modal-card').className = 'md-card' + (wide?' wide':'');
+  document.getElementById('modal').classList.remove('hidden');
+  setTimeout(()=>{ const f = document.querySelector('#modal-body input:not([type=hidden]), #modal-body textarea, #modal-body select'); if(f) f.focus(); },40);
+}
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+const V = id => (document.getElementById(id)?.value ?? '').trim();
+function fld(label, id, val, opts){
+  opts = opts||{};
+  const t = opts.type||'text';
+  if (t==='textarea') return `<div class="field"><label class="field-label">${label}</label>
+    <textarea class="inp" id="${id}" placeholder="${opts.ph||''}" style="${opts.style||''}">${esc(val||'')}</textarea>
+    ${opts.hint?`<div class="hint">${opts.hint}</div>`:''}</div>`;
+  if (t==='select') return `<div class="field"><label class="field-label">${label}</label>
+    <select class="inp" id="${id}">${opts.options.map(o=>`<option value="${esc(o[0])}" ${String(val)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select>
+    ${opts.hint?`<div class="hint">${opts.hint}</div>`:''}</div>`;
+  return `<div class="field"><label class="field-label">${label}</label>
+    <input class="inp" id="${id}" type="${t}" value="${esc(val||'')}" placeholder="${opts.ph||''}">
+    ${opts.hint?`<div class="hint">${opts.hint}</div>`:''}</div>`;
+}
+function ftr(saveFn, extra){
+  return `${extra||''}<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
+    <button class="toolbar-btn primary" onclick="${saveFn}">Save</button>`;
+}
+function confirmModal(title, msg, cta, fn, danger){
+  window.__confirmFn = fn;
+  openModal({ title, sub:'', icon: danger?'icon-coral':'icon-amber',
+    body:`<div style="font-size:13px;line-height:1.65;color:var(--text-secondary)">${msg}</div>`,
+    footer:`<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
+      <button class="toolbar-btn ${danger?'danger':'primary'}" onclick="closeModal();window.__confirmFn()">${cta}</button>` });
+}
+
+/* ═══════════════ PLATFORM ═══════════════ */
+function editPlatform(pid){
+  const p = pid ? P(pid) : { name:'', short:'', color:'#2563eb', fg:'#ffffff', category:'', accessModel:'', status:'prospecting', priority:'p2' };
+  openModal({
+    title: pid?'Edit platform':'Add platform', sub: pid?p.name:'A new traffic source to develop',
+    body: `${fld('Platform name','f-name',p.name,{ph:'e.g. Zemanta'})}
+      <div class="grid-2">
+        ${fld('Short code','f-short',p.short,{ph:'2 letters, e.g. Zm'})}
+        ${fld('Accent colour','f-color',p.color,{type:'color'})}
+      </div>
+      <div class="grid-2">
+        ${fld('Category','f-cat',p.category,{ph:'Native, Social, Push…'})}
+        ${fld('Access model','f-access',p.accessModel,{ph:'Rep-led, self-serve…'})}
+      </div>
+      <div class="grid-2">
+        ${fld('Status','f-status',p.status,{type:'select',options:Object.entries(STATUS).map(([k,v])=>[k,v.label])})}
+        ${fld('Priority','f-prio',p.priority,{type:'select',options:Object.entries(PRIORITY)})}
+      </div>`,
+    footer: ftr(`savePlatform(${pid?`'${pid}'`:'null'})`, pid?`<button class="toolbar-btn danger spacer" onclick="delPlatform('${pid}')">Delete platform</button>`:'')
+  });
+}
+function savePlatform(pid){
+  const name = V('f-name'); if(!name){ toast('Give the platform a name','error'); return; }
+  const color = V('f-color');
+  const data = { name, short:V('f-short')||name.slice(0,2), color, fg: isLight(color)?'#111827':'#ffffff',
+    category:V('f-cat'), accessModel:V('f-access'), status:V('f-status'), priority:V('f-prio') };
+  if (pid) Object.assign(P(pid), data);
+  else { const np = seedPlatform(data); S.platforms.push(np); curPid = np.id; }
+  save(); closeModal(); render(); toast(pid?'Platform updated':'Platform added','success');
+}
+function isLight(hex){
+  const c = hex.replace('#',''); if(c.length!==6) return false;
+  const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
+  return (r*299+g*587+b*114)/1000 > 165;
+}
+function delPlatform(pid){
+  const p = P(pid);
+  confirmModal('Delete '+p.name+'?', 'Every offer, meeting note, action item and KPI under this platform goes with it.', 'Delete', ()=>{
+    S.platforms = S.platforms.filter(x=>x.id!==pid); save(); go('dashboard'); toast('Platform deleted');
+  }, true);
+}
+
+/* ═══════════════ POC ═══════════════ */
+function editPoc(pid){
+  const p = P(pid), c = p.poc;
+  openModal({ title:'Point of contact', sub:p.name, icon:'icon-teal', wide:true,
+    body:`<div class="grid-2">
+        ${fld('Name','f-pname',c.name,{ph:'Rep name'})}
+        ${fld('Role','f-prole',c.role,{ph:'Account Manager'})}
+        ${fld('Email','f-pemail',c.email,{type:'email'})}
+        ${fld('Telegram / IM','f-ptg',c.telegram)}
+        ${fld('Timezone','f-ptz',c.timezone,{ph:'CET, EST…'})}
+        ${fld('Cadence','f-pcad',c.cadence,{type:'select',options:[['','Not set'],['Weekly','Weekly'],['Biweekly','Biweekly'],['Monthly','Monthly'],['Ad hoc','Ad hoc']]})}
+        ${fld('Meeting day/time','f-pday',c.meetingDay,{ph:'Tuesdays 15:00 CET'})}
+        ${fld('Next call','f-pnext',c.nextMeeting,{type:'date'})}
+      </div>
+      ${fld('Route to a POC','f-ppath',c.path,{type:'textarea',ph:'If there is no rep yet — how do we get one?',hint:'Keep this filled in for platforms without a contact. It is the first thing management asks.'})}`,
+    footer: ftr(`savePoc('${pid}')`) });
+}
+function savePoc(pid){
+  Object.assign(P(pid).poc, { name:V('f-pname'), role:V('f-prole'), email:V('f-pemail'), telegram:V('f-ptg'),
+    timezone:V('f-ptz'), cadence:V('f-pcad'), meetingDay:V('f-pday'), nextMeeting:V('f-pnext'), path:V('f-ppath') });
+  save(); closeModal(); render(); toast('Contact saved','success');
+}
+
+/* ═══════════════ STRATEGY ═══════════════ */
+function editStrategy(pid){
+  const s = P(pid).strategy;
+  openModal({ title:'Strategy', sub:P(pid).name, wide:true,
+    body:`${fld('Objective','f-sobj',s.objective,{type:'textarea',style:'min-height:56px',ph:'What does success on this platform look like?'})}
+      ${fld('Why it fits','f-swhy',s.whyFit,{type:'textarea',style:'min-height:56px'})}
+      <div class="grid-2">
+        ${fld('Verticals','f-sver',s.verticals)}
+        ${fld('Geos','f-sgeo',s.geos)}
+        ${fld('Spend target','f-sspend',s.spendTarget,{ph:'$15k/mo by Q4'})}
+        ${fld('Creative formats','f-sfmt',s.formats)}
+        ${fld('Minimum deposit','f-smin',s.minDeposit)}
+        ${fld('Payment terms','f-spay',s.payment)}
+      </div>
+      ${fld('Tracking setup','f-strk',s.tracking,{type:'textarea',style:'min-height:52px',ph:'Pixel, postbacks, Everflow mapping…'})}
+      ${fld('Constraints &amp; policy','f-scon',s.constraints,{type:'textarea',style:'min-height:52px'})}
+      ${fld('Spy / research notes','f-sspy',s.spyNotes,{type:'textarea',style:'min-height:52px',ph:'Which spy tool covers this platform, what the competitive picture looks like…'})}`,
+    footer: ftr(`saveStrategy('${pid}')`) });
+}
+function saveStrategy(pid){
+  Object.assign(P(pid).strategy, { objective:V('f-sobj'), whyFit:V('f-swhy'), verticals:V('f-sver'), geos:V('f-sgeo'),
+    spendTarget:V('f-sspend'), formats:V('f-sfmt'), minDeposit:V('f-smin'), payment:V('f-spay'),
+    tracking:V('f-strk'), constraints:V('f-scon'), spyNotes:V('f-sspy') });
+  save(); closeModal(); render(); toast('Strategy saved','success');
+}
+
+/* ═══════════════ STAGES ═══════════════ */
+function toggleStage(pid, sid){
+  const s = P(pid).stages.find(x=>x.id===sid); s.done = !s.done; save(); renderTab(); renderNav();
+}
+let noteTimer;
+function setStageNote(pid, sid, v){
+  P(pid).stages.find(x=>x.id===sid).note = v;
+  clearTimeout(noteTimer); noteTimer = setTimeout(()=>save(), 400);
+}
+function addStage(pid){
+  openModal({ title:'Add a stage', sub:P(pid).name,
+    body: fld('Stage name','f-stg','',{ph:'e.g. Rebate negotiated'}) + fld('What it means','f-stghint','',{ph:'Optional one-liner'}),
+    footer: ftr(`saveStage('${pid}',null)`) });
+}
+function editStage(pid, sid){
+  const s = P(pid).stages.find(x=>x.id===sid);
+  openModal({ title:'Edit stage', sub:P(pid).name,
+    body: fld('Stage name','f-stg',s.label,{ph:'e.g. Rebate negotiated'}) + fld('What it means','f-stghint',s.hint,{ph:'Optional one-liner'}),
+    footer: ftr(`saveStage('${pid}','${sid}')`, `<button class="toolbar-btn danger spacer" onclick="closeModal();delStage('${pid}','${sid}')">Delete</button>`) });
+}
+function saveStage(pid, sid){
+  const l = V('f-stg'); if(!l){ toast('Name the stage','error'); return; }
+  if (sid) {
+    const s = P(pid).stages.find(x=>x.id===sid);
+    Object.assign(s, { label:l, hint:V('f-stghint') });
+    save(); closeModal(); renderPlatform(); toast('Stage updated','success');
+  } else {
+    P(pid).stages.push({ id:uid(), label:l, hint:V('f-stghint'), note:'', done:false });
+    save(); closeModal(); renderPlatform(); toast('Stage added','success');
+  }
+}
+function delStage(pid, sid){
+  const s = P(pid).stages.find(x=>x.id===sid);
+  confirmModal('Delete this stage?', `“${esc(s.label)}” and any note on it will be removed from the development plan.`, 'Delete', ()=>{
+    P(pid).stages = P(pid).stages.filter(x=>x.id!==sid); save(); renderPlatform(); toast('Stage deleted');
+  }, true);
+}
+function moveStage(pid, sid, dir){
+  const arr = P(pid).stages;
+  const i = arr.findIndex(x=>x.id===sid);
+  const j = i + dir;
+  if (i<0 || j<0 || j>=arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  save(); renderPlatform();
+}
+
+/* ═══════════════ OFFERS ═══════════════ */
+function editOffer(pid, oid){
+  const p = P(pid);
+  const o = oid ? p.offers.find(x=>x.id===oid)
+    : { name:'', vertical:'', geo:'', status:'queued', launched:'', ended:'', spend:'', revenue:'', reason:'', researchSlug:'', notes:'' };
+  openModal({ title: oid?'Edit offer':'Add offer', sub: p.name, icon:'icon-teal', wide:true,
+    body:`<div class="grid-2">
+        ${fld('Offer name','f-oname',o.name,{ph:'e.g. Orivelle'})}
+        ${fld('Vertical','f-over',o.vertical,{ph:'Health, dating, insurance…'})}
+        ${fld('Geo','f-ogeo',o.geo,{ph:'US, CA, UK…'})}
+        ${fld('Status','f-ostat',o.status,{type:'select',options:Object.entries(OFFER_STATUS).map(([k,v])=>[k,v.label])})}
+        ${fld('Launched','f-olaunch',o.launched,{type:'date'})}
+        ${fld('Ended','f-oend',o.ended,{type:'date'})}
+        ${fld('Spend','f-ospend',o.spend,{type:'number',ph:'0'})}
+        ${fld('Revenue','f-orev',o.revenue,{type:'number',ph:'0'})}
+      </div>
+      ${fld('Reason it was not tested','f-oreason',o.reason,{type:'textarea',style:'min-height:52px',ph:'Only needed for queued or not-tested offers',hint:'Be specific — "advertiser would not approve the geo" beats "no capacity".'})}
+      ${fld('Creative research slug','f-oslug',o.researchSlug,{ph:'obd-fuel',hint:`Links to ${esc(researchUrl('«slug»'))}`})}
+      ${fld('Notes','f-onotes',o.notes,{type:'textarea',style:'min-height:52px',ph:'Angle, funnel, what the test proved…'})}`,
+    footer: ftr(`saveOffer('${pid}',${oid?`'${oid}'`:'null'})`, oid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delOffer('${pid}','${oid}')">Delete</button>`:'') });
+}
+function saveOffer(pid, oid){
+  const name = V('f-oname'); if(!name){ toast('Give the offer a name','error'); return; }
+  const d = { name, vertical:V('f-over'), geo:V('f-ogeo'), status:V('f-ostat'), launched:V('f-olaunch'), ended:V('f-oend'),
+    spend: parseFloat(V('f-ospend'))||0, revenue: parseFloat(V('f-orev'))||0,
+    reason:V('f-oreason'), researchSlug:V('f-oslug'), notes:V('f-onotes') };
+  if ((d.status==='not_tested'||d.status==='queued') && !d.reason) {
+    toast('Add a reason — untested offers need one','error'); document.getElementById('f-oreason').focus(); return;
+  }
+  const p = P(pid);
+  if (oid) Object.assign(p.offers.find(x=>x.id===oid), d);
+  else p.offers.push(Object.assign({id:uid()}, d));
+  save(); closeModal(); render(); toast(oid?'Offer updated':'Offer added','success');
+}
+function delOffer(pid, oid){
+  const o = P(pid).offers.find(x=>x.id===oid);
+  confirmModal('Delete offer?', `“${esc(o.name)}” and its P&L will be removed from ${esc(P(pid).name)}.`, 'Delete', ()=>{
+    P(pid).offers = P(pid).offers.filter(x=>x.id!==oid); save(); render(); toast('Offer deleted');
+  }, true);
+}
+
+/* ═══════════════ ACTIONS ═══════════════ */
+function editAction(pid, aid){
+  const a = (pid && aid) ? P(pid).actions.find(x=>x.id===aid) : { text:'', owner:CONF.owner, due:'', done:false };
+  openModal({ title: aid?'Edit action item':'Add action item', sub: pid?P(pid).name:'', icon:'icon-amber',
+    body:`${!pid||!aid?fld('Platform','f-apid',pid||S.platforms[0].id,{type:'select',options:S.platforms.map(p=>[p.id,p.name])}):''}
+      ${fld('What needs to happen','f-atext',a.text,{type:'textarea',style:'min-height:56px',ph:'Send spend forecast and ask for a rep'})}
+      <div class="grid-2">${fld('Owner','f-aowner',a.owner)}${fld('Due','f-adue',a.due,{type:'date'})}</div>`,
+    footer: ftr(`saveAction(${pid?`'${pid}'`:'null'},${aid?`'${aid}'`:'null'})`,
+      aid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delAction('${pid}','${aid}')">Delete</button>`:'') });
+}
+function saveAction(pid, aid){
+  const text = V('f-atext'); if(!text){ toast('Describe the action','error'); return; }
+  const target = (aid && pid) ? pid : (V('f-apid') || pid);
+  const d = { text, owner:V('f-aowner'), due:V('f-adue') };
+  const p = P(target);
+  if (aid) Object.assign(p.actions.find(x=>x.id===aid), d);
+  else p.actions.push(Object.assign({id:uid(), done:false}, d));
+  save(); closeModal(); render(); toast(aid?'Action updated':'Action added','success');
+}
+function toggleAction(pid, aid){
+  const a = P(pid).actions.find(x=>x.id===aid); a.done = !a.done;
+  a.completedAt = a.done ? today() : ''; save(); render();
+}
+function delAction(pid, aid){
+  P(pid).actions = P(pid).actions.filter(x=>x.id!==aid); save(); render(); toast('Action deleted');
+}
+
+/* ═══════════════ MEETINGS ═══════════════ */
+function editMeeting(pid, mid){
+  const m = (pid && mid) ? P(pid).meetings.find(x=>x.id===mid)
+    : { date:today(), attendees:'', notes:'', decisions:'' };
+  openModal({ title: mid?'Edit meeting':'Log a meeting', sub: pid?P(pid).name:'', icon:'icon-purple', wide:true,
+    body:`<div class="grid-2">
+        ${!pid||!mid?fld('Platform','f-mpid',pid||S.platforms[0].id,{type:'select',options:S.platforms.map(p=>[p.id,p.name])}):''}
+        ${fld('Date','f-mdate',m.date,{type:'date'})}
+      </div>
+      ${fld('Attendees','f-mwho',m.attendees,{ph:'Who was on the call'})}
+      ${fld('Notes','f-mnotes',m.notes,{type:'textarea',style:'min-height:150px',ph:'What was discussed…'})}
+      ${fld('Agreed / decided','f-mdec',m.decisions,{type:'textarea',style:'min-height:70px',ph:'The commitments made on the call',hint:'Turn each of these into an action item so nothing slips.'})}`,
+    footer: ftr(`saveMeeting(${pid?`'${pid}'`:'null'},${mid?`'${mid}'`:'null'})`,
+      mid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delMeeting('${pid}','${mid}')">Delete</button>`:'') });
+}
+function saveMeeting(pid, mid){
+  const target = (mid && pid) ? pid : (V('f-mpid') || pid);
+  const d = { date:V('f-mdate')||today(), attendees:V('f-mwho'), notes:V('f-mnotes'), decisions:V('f-mdec') };
+  const p = P(target);
+  if (mid) Object.assign(p.meetings.find(x=>x.id===mid), d);
+  else p.meetings.push(Object.assign({id:uid()}, d));
+  save(); closeModal(); render(); toast(mid?'Meeting updated':'Meeting logged','success');
+}
+function delMeeting(pid, mid){
+  P(pid).meetings = P(pid).meetings.filter(x=>x.id!==mid); save(); render(); toast('Meeting deleted');
+}
+
+/* ═══════════════ KPIs ═══════════════ */
+function editKpi(pid, kid){
+  const k = kid ? P(pid).kpis.find(x=>x.id===kid) : { metric:'', period:'Monthly', target:'', actual:'', lowerBetter:false, note:'' };
+  openModal({ title: kid?'Edit KPI':'Add KPI', sub:P(pid).name, icon:'icon-coral',
+    body:`${fld('Metric','f-kmet',k.metric,{ph:'Blended ROI, CPL, monthly spend…'})}
+      <div class="grid-2">
+        ${fld('Period','f-kper',k.period,{type:'select',options:[['Weekly','Weekly'],['Monthly','Monthly'],['Quarterly','Quarterly'],['One-off','One-off']]})}
+        ${fld('Direction','f-klow',k.lowerBetter?'1':'0',{type:'select',options:[['0','Higher is better'],['1','Lower is better']]})}
+        ${fld('Target','f-ktgt',k.target)}
+        ${fld('Actual','f-kact',k.actual)}
+      </div>
+      ${fld('Note','f-knote',k.note,{ph:'Optional context'})}`,
+    footer: ftr(`saveKpi('${pid}',${kid?`'${kid}'`:'null'})`) });
+}
+function saveKpi(pid, kid){
+  const m = V('f-kmet'); if(!m){ toast('Name the metric','error'); return; }
+  const d = { metric:m, period:V('f-kper'), target:V('f-ktgt'), actual:V('f-kact'), lowerBetter:V('f-klow')==='1', note:V('f-knote') };
+  if (kid) Object.assign(P(pid).kpis.find(x=>x.id===kid), d);
+  else P(pid).kpis.push(Object.assign({id:uid()}, d));
+  save(); closeModal(); renderPlatform(); toast('KPI saved','success');
+}
+function delKpi(pid, kid){ P(pid).kpis = P(pid).kpis.filter(x=>x.id!==kid); save(); renderPlatform(); }
+
+/* ═══════════════ RESEARCH LINKS ═══════════════ */
+function editResearch(pid){
+  openModal({ title:'Link a research board', sub:P(pid).name, icon:'icon-purple',
+    body: fld('Label','f-rlabel','',{ph:'OBD Fuel — native angles'}) +
+          fld('Slug','f-rslug','',{ph:'obd-fuel',hint:`Resolves to ${esc(researchUrl('«slug»'))}`}),
+    footer: ftr(`saveResearch('${pid}')`) });
+}
+function saveResearch(pid){
+  const slug = V('f-rslug'); if(!slug){ toast('Add the slug','error'); return; }
+  P(pid).research.push({ id:uid(), label:V('f-rlabel')||slug, slug });
+  save(); closeModal(); renderPlatform(); toast('Research board linked','success');
+}
+function delResearch(pid, rid){ P(pid).research = P(pid).research.filter(r=>r.id!==rid); save(); renderPlatform(); }
+
+/* ═══════════════ QUICK ADD / EXPORT ═══════════════ */
+function openQuickAdd(kind){
+  if (kind==='offer')   { editOffer(curPid || S.platforms[0].id); return; }
+  if (kind==='meeting') { editMeeting(null,null); return; }
+  const pid = view==='platform' ? curPid : null;
+  const row = (label, desc, fn, cls) => `<button class="ai-row" style="width:100%;border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:8px;background:none;cursor:pointer;text-align:left;padding:12px 14px" onclick="closeModal();${fn}">
+    <div class="section-icon ${cls}" style="width:28px;height:28px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></div>
+    <div class="ai-text"><b>${label}</b><div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px">${desc}</div></div></button>`;
+  openModal({ title:'Add', sub:'What are you logging?',
+    body: row('Action item','A next step for a platform',`editAction(${pid?`'${pid}'`:'null'})`,'icon-amber')
+        + row('Offer / test','An offer placed with a platform',`editOffer('${pid||S.platforms[0].id}')`,'icon-teal')
+        + row('Meeting note','Notes from a rep call','editMeeting(null,null)','icon-purple')
+        + row('Platform','A new traffic source to develop','editPlatform()','icon-blue'),
+    footer:`<button class="toolbar-btn" onclick="closeModal()">Close</button>` });
+}
+function openExport(){
+  const row = (label, desc, fn) => `<button class="ai-row" style="width:100%;border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:8px;background:none;cursor:pointer;text-align:left;padding:12px 14px" onclick="closeModal();${fn}">
+    <div class="ai-text"><b>${label}</b><div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px">${desc}</div></div></button>`;
+  openModal({ title:'Export', sub:'Share or back up',
+    body: row('Weekly update','Management-ready summary, ready to paste',"go('report')")
+        + row('Offers CSV','Every offer with spend, revenue and P&L','exportCSV()')
+        + row('JSON backup','Full snapshot you can re-import','exportJSON()')
+        + row('Print / PDF','Print the current view','window.print()'),
+    footer:`<button class="toolbar-btn" onclick="closeModal()">Close</button>` });
+}
+
+/* ═══════════════ INIT ═══════════════ */
+load();
+applyTheme();
+render();
+dot('saved', cloudConfigured() ? 'Connecting…' : 'Saved locally');
+if (cloudConfigured()) initCloudSync();
+window.addEventListener('resize', ()=>{ if(window.innerWidth>1024) closeSidebar(); });
+</script>
+</body>
+</html>
