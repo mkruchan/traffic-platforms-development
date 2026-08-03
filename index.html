@@ -234,6 +234,7 @@ table.tbl tbody tr:hover { background:var(--bg-secondary); }
 table.tbl td.num { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
 .row-actions { display:flex; gap:4px; justify-content:flex-end; opacity:0; transition:opacity .15s; }
 tr:hover .row-actions { opacity:1; }
+.ai-row .row-actions { opacity:1; }
 .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;
   border-radius:6px; border:1px solid var(--border-light); background:var(--bg-secondary);
   color:var(--text-secondary); cursor:pointer; padding:0; flex-shrink:0; transition:all .13s; }
@@ -822,10 +823,16 @@ SEED.forEach(p => { const b = BRAND_DEFAULTS[p.name]; if (b) Object.assign(p, b)
 /* ═══════════════ STATE ═══════════════ */
 let S = null, CONF = null, view = 'dashboard', curPid = null, curTab = 'overview';
 
+const SHARED_SUPABASE = {
+  url:'https://vdannnwpikfipdamphlu.supabase.co',
+  key:'sb_publishable_0EgBovhUMdw7RH1qAPnxqA_BLvPVeHL',
+  table:'tpd_state',
+  row:'main'
+};
 function defaultConf(){
   return { owner:'Mykyta', team:'LiftIQ · Traffic Intelligence', currency:'USD',
     researchBase:'https://mkruchan.github.io/creative-research/',
-    everflowBase:'', sb:{ url:'', key:'', table:'tpd_state', row:'main' }, theme:'auto', sidebarCollapsed:false };
+    everflowBase:'', sb:{ ...SHARED_SUPABASE }, theme:'auto', sidebarCollapsed:false };
 }
 
 function load(){
@@ -834,6 +841,11 @@ function load(){
     S = { version:1, created:Date.now(), updated:Date.now(), platforms:SEED };
   }
   try { CONF = Object.assign(defaultConf(), JSON.parse(store.get(CFG)||'{}')); } catch(e){ CONF = defaultConf(); }
+  // if this browser never manually connected/disconnected a Supabase project (both fields still
+  // empty from an older default), pick up the shared team project automatically
+  if (!CONF.sbDisconnected && (!CONF.sb || (!CONF.sb.url && !CONF.sb.key))) {
+    CONF.sb = { ...SHARED_SUPABASE };
+  }
   // migrate: ensure every platform has all keys
   S.platforms.forEach(p => {
     const base = seedPlatform({});
@@ -1297,11 +1309,11 @@ function tabOverview(p){
         <div class="section-body ${p.research.length?'flush':''}">
           ${p.research.length ? p.research.map(r=>`
             <div class="ai-row" ${dragAttrs(p.id,'research',r.id)}>
-              <span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:.5;flex-shrink:0;margin-top:2px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
               <div class="ai-text"><a class="link" href="${esc(researchUrl(r.slug))}" target="_blank" rel="noopener">${esc(r.label||r.slug)}</a>
                 <div class="ai-tags"><span class="ai-tag">${esc(researchUrl(r.slug))}</span></div></div>
               <div class="row-actions">
+                <span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span>
                 <button class="icon-btn" onclick="editResearch('${p.id}','${r.id}')" title="Edit">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
                 <button class="icon-btn danger" onclick="delResearch('${p.id}','${r.id}')" title="Remove">
@@ -1790,6 +1802,7 @@ function renderSettings(){
           <div class="sh-actions">${cloudConfigured()?statusPill():''}</div></div>
         <div class="section-body">
           ${cloudConfigured() ? `
+            ${CONF.sb.url === SHARED_SUPABASE.url ? '<div class="badge b-blue" style="margin-bottom:12px">Shared team database — same as Creative Research</div>' : ''}
             <div class="kv"><div class="kv-k">Project</div><div class="kv-v" style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(CONF.sb.url)}</div></div>
             <div class="kv"><div class="kv-k">Table / row</div><div class="kv-v">${esc(CONF.sb.table)} · ${esc(CONF.sb.row)}</div></div>
             <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
@@ -1798,11 +1811,16 @@ function renderSettings(){
               <button class="toolbar-btn" onclick="openConnectSupabase()">Edit connection</button>
               <button class="toolbar-btn danger" onclick="disconnectSupabase()">Disconnect</button>
             </div>
-            <div class="hint">Every save pushes automatically a moment after you stop typing. Pull if a teammate changed something and you want their latest version.</div>
+            <div class="hint">${CONF.sb.url === SHARED_SUPABASE.url
+              ? 'Anyone who opens this file connects to this same database automatically — no setup needed. It writes to its own table, so it never touches your Creative Research data.'
+              : 'Every save pushes automatically a moment after you stop typing. Pull if a teammate changed something and you want their latest version.'}</div>
           ` : `
             <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
-              Not connected — everything you see is local to this browser only. Connect a Supabase project so this becomes a shared workspace: every teammate who connects with the same project and row id reads and writes the same data.</div>
-            <button class="toolbar-btn primary" onclick="openConnectSupabase()">Connect Supabase</button>
+              Not connected — everything you see is local to this browser only.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="toolbar-btn primary" onclick="reconnectSharedDatabase()">Reconnect to shared database</button>
+              <button class="toolbar-btn" onclick="openConnectSupabase()">Connect a different project</button>
+            </div>
           `}
         </div>
       </div>
@@ -1947,6 +1965,7 @@ async function connectSupabase(){
   const url = V('f-sburl'), key = V('f-sbkey'), table = V('f-sbtable')||'tpd_state', row = V('f-sbrow')||'main';
   if (!url || !key) { toast('Add both the project URL and the anon key','error'); return; }
   CONF.sb = { url, key, table, row };
+  CONF.sbDisconnected = false;
   closeModal();
   toast('Connecting…');
   const ok = await cloudPull(true);
@@ -1978,9 +1997,17 @@ create policy "rw" on tpd_state for all using (true) with check (true);</div>
     footer:`<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
       <button class="toolbar-btn primary" onclick="connectSupabase()">Connect</button>` });
 }
+async function reconnectSharedDatabase(){
+  CONF.sb = { ...SHARED_SUPABASE };
+  CONF.sbDisconnected = false;
+  toast('Connecting…');
+  await cloudPull(true);
+  save(true);
+  render();
+}
 function disconnectSupabase(){
   confirmModal('Disconnect Supabase?','This stops syncing to the cloud. Your local data stays exactly as it is.', 'Disconnect', ()=>{
-    CONF.sb = { url:'', key:'', table:'tpd_state', row:'main' }; sbState='idle';
+    CONF.sb = { url:'', key:'', table:'tpd_state', row:'main' }; CONF.sbDisconnected = true; sbState='idle';
     save(true); dot('saved','Saved locally'); renderSettings(); toast('Disconnected');
   });
 }
