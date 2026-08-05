@@ -894,7 +894,7 @@ function defaultConf(){
     researchBase:'https://mkruchan.github.io/creative-research/',
     everflowBase:'', sb:{ ...SHARED_SUPABASE }, theme:'auto', sidebarCollapsed:false,
     autoSyncDismissed:[], lastResearchSync:null,
-    fathom:{ apiKey:'', autoSync:false, lastSync:null, dismissed:[] } };
+    fathom:{ apiKey:'', proxyUrl:'', autoSync:false, lastSync:null, dismissed:[] } };
 }
 
 function load(){
@@ -1138,11 +1138,11 @@ function renderNav(){
 
 function logoChip(p, size){
   size = size||36;
-  const letterFallback = `<span class="pf-logo-fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:${p.color};color:${p.fg||'#fff'};font-size:${Math.round(size*0.38)}px;border-radius:inherit">${esc(p.short||p.name.slice(0,2))}</span>`;
+  const neutralFallback = `<span class="pf-logo-fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg-primary);color:var(--text-muted);font-size:${Math.round(size*0.38)}px;border-radius:inherit">${esc(p.short||p.name.slice(0,2))}</span>`;
 
   if (p.logoUrl) {
     return `<div class="pf-logo" style="position:relative;width:${size}px;height:${size}px;background:var(--bg-primary);overflow:hidden">
-      ${letterFallback}
+      ${neutralFallback}
       <img src="${esc(p.logoUrl)}" alt="${esc(p.name)} logo" loading="lazy"
         style="position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);object-fit:contain;background:#fff;border-radius:6px;z-index:1"
         onerror="this.remove()">
@@ -1953,18 +1953,28 @@ function renderSettings(){
       <div class="section">
         <div class="section-header"><div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20M8 4v4"/></svg></div>
           <div><h2>Fathom sync</h2><div class="sh-sub">Auto-log meetings, with playback, from Fathom recordings</div></div>
-          <div class="sh-actions">${fathomConfigured()?fathomStatusPill():''}</div></div>
+          <div class="sh-actions">${fathomConfigured()?fathomStatusPill()+(fathomViaProxy()?' <span class="badge b-grey" style="margin-left:4px">via proxy</span>':''):''}</div></div>
         <div class="section-body">
           <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
-            <b>Before you rely on this:</b> Fathom's API is built for server-to-server use — every example in their own docs runs from a backend, never a browser. There's a real chance their API blocks direct requests from here (a CORS restriction), which "Test connection" below will reveal immediately. If it's blocked, the fix is a small server-side relay (a Cloudflare Worker, for example) — ask me and I'll write one.
-            <br><br><b>On playback:</b> Fathom's API only gives a link to their own hosted recording page — there's no raw audio/video file to embed as a native player. Clicking "Play recording" on a meeting embeds that page in an iframe; if your browser blocks the embed, an "Open in Fathom" link is always shown right next to it as a guaranteed fallback.
+            <b>On playback:</b> Fathom's API only gives a link to their own hosted recording page — there's no raw audio/video file to embed as a native player. Clicking "Play recording" on a meeting embeds that page in an iframe; if your browser blocks the embed, an "Open in Fathom" link is always shown right next to it as a guaranteed fallback.
           </div>
+          <div class="field"><label class="field-label">Option A — direct (try this first)</label></div>
           <div class="grid-2">
             ${fld('Fathom API key','f-fm-key',CONF.fathom.apiKey,{type:'password',ph:'Paste your API key',hint:'From your Fathom account settings → API'})}
           </div>
+          <div class="hint" style="margin:-8px 0 14px">"Test connection" will show the exact error if this doesn't reach Fathom — including the raw browser message, so we know precisely what's happening rather than guessing.</div>
+          <div class="divider"></div>
+          <div class="field"><label class="field-label">Option B — proxy (if Option A gets blocked)</label></div>
+          <div class="grid-2">
+            ${fld('Worker proxy URL','f-fm-proxy',CONF.fathom.proxyUrl,{ph:'https://fathom-proxy.you.workers.dev',
+              hint:'A small Cloudflare Worker that relays requests and keeps your API key off the client entirely. When this is filled in, the API key field above is ignored.'})}
+          </div>
+          <div class="hint" style="margin:-8px 0 14px">
+            Free to run (Cloudflare's free tier). I already wrote the Worker code for you — download it, paste it into a new Cloudflare Worker, add your Fathom key as a secret there, then paste the Worker's URL here. Full copy-paste steps are in the comment at the top of the file.
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px">
-            <button class="toolbar-btn" onclick="CONF.fathom.apiKey=V('f-fm-key');save(true);testFathomConnection()">Test connection</button>
-            <button class="toolbar-btn" onclick="CONF.fathom.apiKey=V('f-fm-key');save(true);syncFathom()">Sync now</button>
+            <button class="toolbar-btn" onclick="CONF.fathom.apiKey=V('f-fm-key');CONF.fathom.proxyUrl=V('f-fm-proxy');save(true);testFathomConnection()">Test connection</button>
+            <button class="toolbar-btn" onclick="CONF.fathom.apiKey=V('f-fm-key');CONF.fathom.proxyUrl=V('f-fm-proxy');save(true);syncFathom()">Sync now</button>
           </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;margin-bottom:10px">
             <input type="checkbox" ${CONF.fathom.autoSync?'checked':''} onchange="CONF.fathom.autoSync=this.checked;save(true)">
@@ -2282,7 +2292,8 @@ async function syncCreativeResearch(silent){
 let fathomState = 'idle'; // idle | connecting | connected | error
 let _fathomUnmatched = [];
 
-function fathomConfigured(){ return !!(CONF.fathom && CONF.fathom.apiKey); }
+function fathomConfigured(){ return !!(CONF.fathom && (CONF.fathom.apiKey || CONF.fathom.proxyUrl)); }
+function fathomViaProxy(){ return !!(CONF.fathom && CONF.fathom.proxyUrl); }
 
 function matchFathomMeeting(row){
   const emails = new Set();
@@ -2311,21 +2322,29 @@ function fathomActionItemsToText(items){
 }
 
 async function fathomFetch(path, key){
+  const proxyBase = (CONF.fathom.proxyUrl||'').replace(/\/+$/,'');
+  const base = proxyBase || 'https://api.fathom.ai/external/v1';
+  const cleanKey = (key||'').trim();
+  const headers = proxyBase ? {} : { 'X-Api-Key': cleanKey };
   let res;
   try {
-    res = await fetch('https://api.fathom.ai/external/v1'+path, { headers: { 'X-Api-Key': key } });
+    res = await fetch(base+path, { headers });
   } catch(networkErr){
-    const e = new Error('Request was blocked before reaching Fathom — almost always a CORS restriction from their API, not a bad key.');
-    e.corsLikely = true; throw e;
+    // Don't assume why this failed — could be CORS, could be a network blip, could be
+    // a browser extension. Surface the browser's own message so it's diagnosable.
+    const e = new Error('Fetch failed before reaching '+(proxyBase?'the proxy':'Fathom')+': '+networkErr.message);
+    e.rawFailure = true;
+    throw e;
   }
   const json = await res.json().catch(()=>({}));
-  if (!res.ok) throw new Error(json.message || json.error || ('HTTP '+res.status));
+  if (!res.ok) throw new Error(json.error || json.message || ('HTTP '+res.status));
   return json;
 }
 
 async function testFathomConnection(){
   const key = V('f-fm-key') || (CONF.fathom||{}).apiKey;
-  if (!key) { toast('Enter your API key first','error'); return; }
+  const proxyUrl = V('f-fm-proxy') || (CONF.fathom||{}).proxyUrl;
+  if (!key && !proxyUrl) { toast('Enter your API key or a proxy URL first','error'); return; }
   fathomState = 'connecting'; if (view==='settings') renderSettings();
   try {
     const data = await fathomFetch('/meetings?limit=1', key);
@@ -2333,13 +2352,13 @@ async function testFathomConnection(){
     toast(`Connected — Fathom API reachable (${(data.items||[]).length} meeting${(data.items||[]).length===1?'':'s'} in test page)`, 'success');
   } catch(e){
     fathomState = 'error';
-    toast(e.corsLikely ? 'Blocked by the browser — see the note in Settings for why' : ('Connection failed: '+e.message), 'error');
+    toast('Connection failed: '+e.message, 'error');
   }
   if (view==='settings') renderSettings();
 }
 
 async function syncFathom(silent){
-  if (!fathomConfigured()){ if(!silent) toast('Add your Fathom API key first','error'); return; }
+  if (!fathomConfigured()){ if(!silent) toast('Add your Fathom API key or a proxy URL first','error'); return; }
   fathomState = 'connecting';
   try {
     const data = await fathomFetch('/meetings?include_summary=true&include_action_items=true&limit=50', CONF.fathom.apiKey);
@@ -2373,7 +2392,7 @@ async function syncFathom(silent){
     if (!silent) toast(added ? `Synced ${added} meeting${added===1?'':'s'}` : 'No new meetings to sync', 'success');
   } catch(e){
     fathomState = 'error';
-    if (!silent) toast(e.corsLikely ? 'Sync blocked by the browser — see Settings' : ('Sync failed: '+e.message), 'error');
+    if (!silent) toast('Sync failed: '+e.message, 'error');
   }
   if (view==='settings') renderSettings();
 }
