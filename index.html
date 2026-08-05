@@ -202,6 +202,7 @@ body.force-dark .neg { color:#f87171; }
 .pf-card:hover { box-shadow:var(--shadow-md); border-color:var(--border-mid); transform:translateY(-1px); }
 .pf-card-top { padding:15px 17px 12px; display:flex; align-items:flex-start; gap:11px; }
 .pf-logo { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--border-light);
   font-size:14px; font-weight:700; color:#fff; flex-shrink:0; letter-spacing:-.4px; }
 .pf-name { font-size:14px; font-weight:600; line-height:1.25; }
 .pf-meta { font-size:11px; color:var(--text-secondary); margin-top:2px; }
@@ -494,10 +495,6 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       Meetings<span class="nav-count" id="nav-count-meetings">0</span>
     </button>
-    <button class="ds-nav-item" data-nav="report" onclick="go('report')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
-      Weekly update
-    </button>
 
     <div class="ds-nav-section">Platforms</div>
     <div id="nav-platforms"></div>
@@ -631,7 +628,6 @@ const OFFER_STATUS = {
   killed:     { label:'Killed',     cls:'b-coral'  },
   not_tested: { label:'Not tested', cls:'b-grey'   }
 };
-const PRIORITY = { p1:'P1 — core', p2:'P2 — active', p3:'P3 — watch' };
 
 const STAGE_TEMPLATE = [
   ['Platform fit assessment',      'Traffic type, inventory, targeting depth, which of our verticals can legally run.'],
@@ -654,8 +650,13 @@ const BRAND_ICONS = {
     path:'M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z' },
   snapchat: { viewBox:'0 0 24 24',
     path:'M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03c-.135 0-.313-.031-.538-.074-.36-.075-.765-.135-1.273-.135-.3 0-.599.015-.913.074-.6.104-1.123.464-1.723.884-.853.599-1.826 1.288-3.294 1.288-.06 0-.119-.015-.18-.015h-.149c-1.468 0-2.427-.675-3.279-1.288-.599-.42-1.107-.779-1.707-.884-.314-.045-.629-.074-.928-.074-.54 0-.958.089-1.272.149-.211.043-.391.074-.54.074-.374 0-.523-.224-.583-.42-.061-.192-.09-.389-.135-.567-.046-.181-.105-.494-.166-.57-1.918-.222-2.95-.642-3.189-1.226-.031-.063-.052-.15-.055-.225-.015-.243.165-.465.42-.509 3.264-.54 4.73-3.879 4.791-4.02l.016-.029c.18-.345.224-.645.119-.869-.195-.434-.884-.658-1.332-.809-.121-.029-.24-.074-.346-.119-1.107-.435-1.257-.93-1.197-1.273.09-.479.674-.793 1.168-.793.146 0 .27.029.383.074.42.194.789.3 1.104.3.234 0 .384-.06.465-.105l-.046-.569c-.098-1.626-.225-3.651.307-4.837C7.392 1.077 10.739.807 11.727.807l.419-.015h.06z' },
-  google: { viewBox:'0 0 24 24',
-    path:'M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z' }
+  google: { viewBox:'0 0 48 48', multicolor:true,
+    paths:[
+      { fill:'#EA4335', d:'M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z' },
+      { fill:'#4285F4', d:'M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z' },
+      { fill:'#FBBC05', d:'M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z' },
+      { fill:'#34A853', d:'M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z' }
+    ] }
 };
 
 const CUSTOM_LOGOS = {
@@ -890,7 +891,9 @@ const SHARED_SUPABASE = {
 function defaultConf(){
   return { owner:'Mykyta', team:'LiftIQ · Traffic Intelligence', currency:'USD',
     researchBase:'https://mkruchan.github.io/creative-research/',
-    everflowBase:'', sb:{ ...SHARED_SUPABASE }, theme:'auto', sidebarCollapsed:false };
+    everflowBase:'', sb:{ ...SHARED_SUPABASE }, theme:'auto', sidebarCollapsed:false,
+    autoSyncDismissed:[], lastResearchSync:null,
+    fireflies:{ apiKey:'', autoSync:false, lastSync:null, dismissed:[] } };
 }
 
 function load(){
@@ -1137,7 +1140,7 @@ function logoChip(p, size){
   const letterFallback = `<span class="pf-logo-fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:${p.color};color:${p.fg||'#fff'};font-size:${Math.round(size*0.38)}px;border-radius:inherit">${esc(p.short||p.name.slice(0,2))}</span>`;
 
   if (p.logoUrl) {
-    return `<div class="pf-logo" style="position:relative;width:${size}px;height:${size}px;background:${p.color};overflow:hidden">
+    return `<div class="pf-logo" style="position:relative;width:${size}px;height:${size}px;background:var(--bg-primary);overflow:hidden">
       ${letterFallback}
       <img src="${esc(p.logoUrl)}" alt="${esc(p.name)} logo" loading="lazy"
         style="position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);object-fit:contain;background:#fff;border-radius:6px;z-index:1"
@@ -1146,13 +1149,13 @@ function logoChip(p, size){
   }
   if (p.logoKey && BRAND_ICONS[p.logoKey]) {
     const icon = BRAND_ICONS[p.logoKey];
-    const isGoogle = p.logoKey === 'google';
-    const bg = isGoogle ? 'var(--bg-primary)' : p.color;
-    const border = isGoogle ? 'border:1px solid var(--border-light);' : '';
-    const fill = isGoogle ? '#4285F4' : (p.fg || '#ffffff');
     const iconSize = Math.round(size * 0.5);
-    return `<div class="pf-logo" style="width:${size}px;height:${size}px;background:${bg};${border}">
-      <svg width="${iconSize}" height="${iconSize}" viewBox="${icon.viewBox}" xmlns="http://www.w3.org/2000/svg"><path d="${icon.path}" fill="${fill}"/></svg>
+    const bg = icon.multicolor ? 'var(--bg-primary)' : p.color;
+    const inner = icon.multicolor
+      ? icon.paths.map(seg => `<path d="${seg.d}" fill="${seg.fill}"/>`).join('')
+      : `<path d="${icon.path}" fill="${p.fg || '#ffffff'}"/>`;
+    return `<div class="pf-logo" style="width:${size}px;height:${size}px;background:${bg}">
+      <svg width="${iconSize}" height="${iconSize}" viewBox="${icon.viewBox}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>
     </div>`;
   }
   return `<div class="pf-logo" style="background:${p.color};color:${p.fg||'#fff'};width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px">${esc(p.short||p.name.slice(0,2))}</div>`;
@@ -1216,18 +1219,14 @@ function pfCard(p){
       ${logoChip(p)}
       <div style="flex:1;min-width:0">
         <div class="pf-name">${esc(p.name)}</div>
-        <div class="pf-meta">${esc(p.category||'—')} · ${esc(p.accessModel||'')}</div>
+        <div class="pf-meta">${esc(p.category||'—')}</div>
       </div>
       ${statusBadge(p.status)}
-    </div>
-    <div class="pf-card-body">
-      <div class="pf-progress-track"><div class="pf-progress-fill" style="width:${t.progress}%"></div></div>
-      <div class="pf-progress-label"><span>${t.stagesDone}/${t.stagesTotal} stages</span><span>${t.progress}%</span></div>
     </div>
     <div class="pf-stats">
       <div class="pf-stat"><div class="pf-stat-v ${pnlClass(t.profit)}">${t.offers?money(t.profit):'—'}</div><div class="pf-stat-l">P&amp;L</div></div>
       <div class="pf-stat"><div class="pf-stat-v">${t.offers}</div><div class="pf-stat-l">Offers</div></div>
-      <div class="pf-stat"><div class="pf-stat-v">${t.openActions}</div><div class="pf-stat-l">Open</div></div>
+      <div class="pf-stat"><div class="pf-stat-v">${t.openActions}</div><div class="pf-stat-l">Action items</div></div>
     </div>
     ${nextAction ? `<div class="pf-next">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
@@ -1246,7 +1245,7 @@ function renderPlatform(){
   const p = P(curPid); if(!p){ go('dashboard'); return; }
   const t = platformTotals(p);
   document.getElementById('page-title').textContent = p.name;
-  document.getElementById('page-subtitle').textContent = (p.category||'') + (p.accessModel?' · '+p.accessModel:'');
+  document.getElementById('page-subtitle').textContent = p.category||'';
 
   const tabs = [
     ['overview','Overview',''],
@@ -1266,7 +1265,6 @@ function renderPlatform(){
         <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
           <h2 style="font-size:19px;font-weight:700;letter-spacing:-.3px">${esc(p.name)}</h2>
           ${statusBadge(p.status)}
-          <span class="badge b-grey">${PRIORITY[p.priority]||''}</span>
         </div>
         <div style="font-size:12.5px;color:var(--text-secondary);margin-top:3px">
           ${p.poc.name ? `${esc(p.poc.name)}${p.poc.role?' · '+esc(p.poc.role):''}${p.poc.cadence?' · '+esc(p.poc.cadence)+' call':''}`
@@ -1374,13 +1372,17 @@ function tabOverview(p){
 
       <div class="section">
         <div class="section-header"><div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M2 13l5-4 4 4 3-3 4 3"/></svg></div>
-          <div><h2>Creative research</h2><div class="sh-sub">Linked boards in the research tool</div></div>
-          <div class="sh-actions"><button class="toolbar-btn xs" onclick="editResearch('${p.id}')">+ Link</button></div></div>
+          <div><h2>Creative research</h2><div class="sh-sub">Linked boards in the research tool${CONF.lastResearchSync?' · last synced '+new Date(CONF.lastResearchSync).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</div></div>
+          <div class="sh-actions">
+            <button class="toolbar-btn xs" onclick="syncCreativeResearch()">Sync now</button>
+            <button class="toolbar-btn xs" onclick="editResearch('${p.id}')">+ Link</button>
+          </div></div>
         <div class="section-body ${p.research.length?'flush':''}">
           ${p.research.length ? p.research.map(r=>`
             <div class="ai-row" ${dragAttrs(p.id,'research',r.id)}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:.5;flex-shrink:0;margin-top:2px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
               <div class="ai-text"><a class="link" href="${esc(researchUrl(r.slug))}" target="_blank" rel="noopener">${esc(r.label||r.slug)}</a>
+                ${r.auto?'<span class="badge b-blue" style="margin-left:6px;vertical-align:1px">Auto</span>':''}
                 <div class="ai-tags"><span class="ai-tag">${esc(researchUrl(r.slug))}</span></div></div>
               <div class="row-actions">
                 <span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span>
@@ -1390,7 +1392,7 @@ function tabOverview(p){
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
               </div>
             </div>`).join('')
-          : `<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6">No research boards linked yet. Paste the slug from the Multi-Platform Creative Research tool — e.g. <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:4px">obd-fuel</code> — and it becomes a one-click jump.</div>`}
+          : `<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6">No research boards linked yet. These sync in automatically once a board tags this platform as a traffic source — or paste a slug yourself, e.g. <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:4px">obd-fuel</code>.</div>`}
         </div>
       </div>
 
@@ -1608,8 +1610,11 @@ function meetingCard(m, showPlatform){
     <div class="mt-head">
       <span class="mt-date">${niceDate(m.date)}</span>
       ${showPlatform?`<span class="badge b-grey">${esc(m.pname)}</span>`:''}
+      ${m.firefliesId?'<span class="badge b-purple">Fireflies</span>':''}
       ${m.attendees?`<span class="mt-who">${esc(m.attendees)}</span>`:''}
       <div style="margin-left:auto" class="row-actions">
+        ${m.transcriptUrl?`<a class="icon-btn" href="${esc(m.transcriptUrl)}" target="_blank" rel="noopener" title="View full transcript">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9"/><path d="M10 2h4v4M14 2 8 8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>`:''}
         <button class="icon-btn" onclick="editMeeting('${m.pid}','${m.id}')" title="Edit">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
         <button class="icon-btn danger" onclick="delMeeting('${m.pid}','${m.id}')" title="Delete">
@@ -1891,6 +1896,11 @@ function statusPill(){
   const [cls,label] = map[sbState] || map.idle;
   return `<span class="badge ${cls}">${label}</span>`;
 }
+function firefliesStatusPill(){
+  const map = { connected:['b-teal','Connected'], connecting:['b-amber','Connecting…'], error:['b-coral','Blocked or failed'], idle:['b-grey','Not tested yet'] };
+  const [cls,label] = map[firefliesState] || map.idle;
+  return `<span class="badge ${cls}">${label}</span>`;
+}
 function renderSettings(){
   document.getElementById('view-settings').innerHTML = `
   <div class="stat-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap">
@@ -1925,6 +1935,57 @@ function renderSettings(){
             <div class="hint">Offer research slugs append to this. With <code>obd-fuel</code> as a slug you get <span class="link">${esc(researchUrl('obd-fuel'))}</span></div></div>
           <div class="field"><label class="field-label">Everflow base URL (optional)</label>
             <input class="inp" value="${esc(CONF.everflowBase)}" placeholder="https://your-account.everflowclient.io" oninput="CONF.everflowBase=this.value;save(true)"></div>
+          <div class="divider"></div>
+          <div class="field-label" style="margin-bottom:8px">Research auto-sync</div>
+          <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:10px">
+            Reads the shared Creative Research database and auto-links any board whose Traffic Sources, Top Ads, or Funnels rows tag a matching platform — Facebook, TikTok, Google, Snapchat, Outbrain, Taboola, or Mintegral.
+            News Break and MediaGo can't be auto-matched — the research tool only has a generic "Native" tag that doesn't tell them apart, so those stay manual for now.
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="toolbar-btn" onclick="syncCreativeResearch()">Sync now</button>
+            <span style="font-size:11.5px;color:var(--text-muted)">${CONF.lastResearchSync?'Last synced '+new Date(CONF.lastResearchSync).toLocaleString():'Not synced yet'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20M8 4v4"/></svg></div>
+          <div><h2>Fireflies sync</h2><div class="sh-sub">Auto-log meetings from Fireflies transcripts</div></div>
+          <div class="sh-actions">${firefliesConfigured()?firefliesStatusPill():''}</div></div>
+        <div class="section-body">
+          <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
+            <b>Before you rely on this:</b> Fireflies' API is built for server-to-server use — every example in their own docs runs from a backend, never a browser. There's a real chance their API blocks direct requests from here (a CORS restriction), which "Test connection" below will reveal immediately. If it's blocked, the fix is a small server-side relay (a Cloudflare Worker, for example) — ask me and I'll write one.
+          </div>
+          <div class="grid-2">
+            ${fld('Fireflies API key','f-ff-key',CONF.fireflies.apiKey,{type:'password',ph:'Paste your API key',hint:'From app.fireflies.ai → Integrations → Fireflies API'})}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px">
+            <button class="toolbar-btn" onclick="CONF.fireflies.apiKey=V('f-ff-key');save(true);testFirefliesConnection()">Test connection</button>
+            <button class="toolbar-btn" onclick="CONF.fireflies.apiKey=V('f-ff-key');save(true);syncFireflies()">Sync now</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;margin-bottom:10px">
+            <input type="checkbox" ${CONF.fireflies.autoSync?'checked':''} onchange="CONF.fireflies.autoSync=this.checked;save(true)">
+            Sync automatically each time this page loads
+          </label>
+          <div style="font-size:11.5px;color:var(--text-muted)">${CONF.fireflies.lastSync?'Last synced '+new Date(CONF.fireflies.lastSync).toLocaleString():'Not synced yet'}</div>
+          ${_firefliesUnmatched.length ? `
+            <div class="divider"></div>
+            <div class="field-label" style="margin-bottom:8px">Couldn't auto-match (${_firefliesUnmatched.length})</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px">No attendee's email domain or the title matched a platform's name. Assign manually or ignore.</div>
+            ${_firefliesUnmatched.map(row=>`
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-light);flex-wrap:wrap">
+                <div style="flex:1;min-width:160px">
+                  <div style="font-size:12.5px;font-weight:600">${esc(row.title||'Untitled meeting')}</div>
+                  <div style="font-size:11px;color:var(--text-muted)">${row.date?niceDate(new Date(Number(row.date)).toISOString().slice(0,10)):''}</div>
+                </div>
+                <select class="inp" id="ff-assign-${esc(row.id)}" style="width:auto;font-size:11.5px;padding:5px 8px">
+                  <option value="">Assign to…</option>
+                  ${S.platforms.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}
+                </select>
+                <button class="toolbar-btn xs" onclick="assignFirefliesMeeting('${esc(row.id)}',document.getElementById('ff-assign-${esc(row.id)}').value)">Add</button>
+                <button class="toolbar-btn xs" onclick="dismissFirefliesMeeting('${esc(row.id)}')">Ignore</button>
+              </div>`).join('')}
+          ` : ''}
         </div>
       </div>
     </div>
@@ -1965,7 +2026,6 @@ function renderSettings(){
         <div class="section-body">
           <div class="field-label" style="margin-bottom:8px">Export</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-            <button class="toolbar-btn" onclick="go('report')">Weekly update</button>
             <button class="toolbar-btn" onclick="window.print()">Print / PDF</button>
             <button class="toolbar-btn" onclick="exportCSV()">Offers CSV</button>
             <button class="toolbar-btn" onclick="exportJSON()">JSON backup</button>
@@ -2145,9 +2205,202 @@ function disconnectSupabase(){
     save(true); dot('saved','Saved locally'); renderSettings(); toast('Disconnected');
   });
 }
+/* ═══════════════ CREATIVE RESEARCH AUTO-SYNC ═══════════════
+   Reads the shared "offers" table from Creative Research (same Supabase
+   project) and auto-links any board that tags a matching traffic source
+   in its Top Traffic Sources / Top Ads / Top Funnels rows. */
+
+// Replicates Creative Research's own slug logic exactly: first two words of
+// the title, lowercased, non-alphanumeric stripped, hyphen-joined.
+function offerSlugFromTitle(title){
+  if (!title) return '';
+  return title.trim().split(/\s+/).slice(0,2)
+    .map(w=>w.toLowerCase().replace(/[^a-z0-9]+/g,''))
+    .filter(Boolean).join('-');
+}
+
+// Maps Creative Research's traffic-source tag values to our platform names.
+// 'native', 'youtube', 'pinterest', 'twitter', 'linkedin', 'reddit', 'email',
+// 'sms', 'push', 'mgid', 'revcontent' have no unambiguous match among our
+// platforms and are intentionally left unmapped.
+const SOURCE_TAG_MAP = {
+  meta:'Facebook', tiktok:'TikTok', google:'Google', snapchat:'Snapchat',
+  outbrain:'Outbrain', taboola:'Taboola', 'in-app-dsp':'Mintegral', programmatic:'Mintegral'
+};
+
+function isAutoSyncDismissed(pid, slug){
+  return (CONF.autoSyncDismissed||[]).some(d=>d.platformId===pid && d.slug===slug);
+}
+
+async function syncCreativeResearch(silent){
+  if (!cloudConfigured()) { if(!silent) toast('Connect Supabase first','error'); return; }
+  try {
+    const base = CONF.sb.url.replace(/\/+$/,'');
+    const res = await fetch(`${base}/rest/v1/offers?select=id,name,updated_at,data->traffic,data->ads,data->funnels`,
+      { headers: sbHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    let added = 0;
+    rows.forEach(row => {
+      const tags = new Set();
+      (row.traffic||[]).forEach(r=>{ if(r.source) tags.add(String(r.source).toLowerCase()); });
+      (row.ads||[]).forEach(r=>{ if(r.channel) tags.add(String(r.channel).toLowerCase()); });
+      (row.funnels||[]).forEach(r=>{ if(r.trafficSource) tags.add(String(r.trafficSource).toLowerCase()); });
+      if (!tags.size) return;
+      const slug = offerSlugFromTitle(row.name);
+      if (!slug) return;
+      tags.forEach(tag=>{
+        const platformName = SOURCE_TAG_MAP[tag];
+        if (!platformName) return;
+        const p = S.platforms.find(x=>x.name===platformName);
+        if (!p) return;
+        if (isAutoSyncDismissed(p.id, slug)) return;
+        if (p.research.some(r=>r.slug===slug)) return;
+        p.research.push({ id:uid(), label: row.name, slug, auto:true, tag });
+        added++;
+      });
+    });
+    CONF.lastResearchSync = Date.now();
+    if (added) { save(); render(); } else { save(true); }
+    if (!silent) toast(added ? `Synced ${added} new research link${added===1?'':'s'}` : 'Already up to date', 'success');
+    if (view==='settings') renderSettings();
+  } catch(e){
+    if (!silent) toast('Sync failed — check the shared connection','error');
+  }
+}
+
+/* ═══════════════ FIREFLIES SYNC ═══════════════
+   Meeting transcripts don't carry a "traffic platform" field, so matching is
+   a best-effort heuristic: (1) does any attendee's email domain match a
+   platform's saved POC email domain, (2) else does the platform's name
+   appear in the meeting title. Anything that matches neither shows up as
+   "unmatched" in Settings for a one-click manual assign. */
+let firefliesState = 'idle'; // idle | connecting | connected | error
+let _firefliesUnmatched = [];
+
+function firefliesConfigured(){ return !!(CONF.fireflies && CONF.fireflies.apiKey); }
+
+function matchFirefliesTranscript(row){
+  const emails = new Set();
+  if (row.organizer_email) emails.add(String(row.organizer_email).toLowerCase());
+  (row.participants||[]).forEach(e=>{ if(e) emails.add(String(e).toLowerCase()); });
+  (row.meeting_attendees||[]).forEach(a=>{ if(a && a.email) emails.add(String(a.email).toLowerCase()); });
+
+  const matches = new Set();
+  S.platforms.forEach(p=>{
+    const domain = (p.poc.email||'').split('@')[1];
+    if (domain) { const d = domain.toLowerCase(); if ([...emails].some(e=>e.endsWith('@'+d))) matches.add(p.id); }
+  });
+  if (!matches.size) {
+    const title = String(row.title||'').toLowerCase();
+    S.platforms.forEach(p=>{ if (title.includes(p.name.toLowerCase())) matches.add(p.id); });
+  }
+  return [...matches];
+}
+
+async function firefliesFetch(query, key){
+  let res;
+  try {
+    res = await fetch('https://api.fireflies.ai/graphql', {
+      method:'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+      body: JSON.stringify({ query })
+    });
+  } catch(networkErr){
+    const e = new Error('Request was blocked before reaching Fireflies — almost always a CORS restriction from their API, not a bad key.');
+    e.corsLikely = true; throw e;
+  }
+  const json = await res.json().catch(()=>({}));
+  if (!res.ok || json.errors) {
+    throw new Error((json.errors && json.errors[0]?.message) || ('HTTP '+res.status));
+  }
+  return json.data;
+}
+
+async function testFirefliesConnection(){
+  const key = V('f-ff-key') || (CONF.fireflies||{}).apiKey;
+  if (!key) { toast('Enter your API key first','error'); return; }
+  firefliesState = 'connecting'; if (view==='settings') renderSettings();
+  try {
+    const data = await firefliesFetch('{ user { name email num_transcripts } }', key);
+    firefliesState = 'connected';
+    toast(`Connected — ${data.user.name || data.user.email} · ${data.user.num_transcripts} transcripts`, 'success');
+  } catch(e){
+    firefliesState = 'error';
+    toast(e.corsLikely ? 'Blocked by the browser — see the note in Settings for why' : ('Connection failed: '+e.message), 'error');
+  }
+  if (view==='settings') renderSettings();
+}
+
+async function syncFireflies(silent){
+  if (!firefliesConfigured()){ if(!silent) toast('Add your Fireflies API key first','error'); return; }
+  firefliesState = 'connecting';
+  try {
+    const data = await firefliesFetch(
+      `{ transcripts(limit: 50) { id title date transcript_url organizer_email participants meeting_attendees { name email } summary { overview action_items } } }`,
+      CONF.fireflies.apiKey);
+    const rows = data.transcripts || [];
+    let added = 0;
+    _firefliesUnmatched = [];
+    rows.forEach(row=>{
+      const alreadyImported = S.platforms.some(p=>p.meetings.some(m=>m.firefliesId===row.id));
+      if (alreadyImported) return;
+      const matches = matchFirefliesTranscript(row);
+      if (!matches.length) {
+        if (!(CONF.fireflies.dismissed||[]).includes(row.id)) _firefliesUnmatched.push(row);
+        return;
+      }
+      matches.forEach(pid=>{
+        const p = P(pid);
+        const attendees = (row.meeting_attendees||[]).map(a=>a.name||a.email).filter(Boolean).join(', ');
+        p.meetings.push({
+          id:uid(),
+          date: row.date ? new Date(Number(row.date)).toISOString().slice(0,10) : today(),
+          attendees, notes: (row.summary && row.summary.overview) || '',
+          decisions: (row.summary && row.summary.action_items) || '',
+          firefliesId: row.id, transcriptUrl: row.transcript_url || ''
+        });
+        added++;
+      });
+    });
+    firefliesState = 'connected';
+    CONF.fireflies.lastSync = Date.now();
+    if (added) { save(); render(); } else { save(true); }
+    if (!silent) toast(added ? `Synced ${added} meeting${added===1?'':'s'}` : 'No new meetings to sync', 'success');
+  } catch(e){
+    firefliesState = 'error';
+    if (!silent) toast(e.corsLikely ? 'Sync blocked by the browser — see Settings' : ('Sync failed: '+e.message), 'error');
+  }
+  if (view==='settings') renderSettings();
+}
+
+function assignFirefliesMeeting(transcriptId, pid){
+  const row = _firefliesUnmatched.find(r=>r.id===transcriptId);
+  if (!row || !pid) return;
+  const p = P(pid);
+  const attendees = (row.meeting_attendees||[]).map(a=>a.name||a.email).filter(Boolean).join(', ');
+  p.meetings.push({
+    id:uid(), date: row.date ? new Date(Number(row.date)).toISOString().slice(0,10) : today(),
+    attendees, notes: (row.summary && row.summary.overview) || '',
+    decisions: (row.summary && row.summary.action_items) || '',
+    firefliesId: row.id, transcriptUrl: row.transcript_url || ''
+  });
+  _firefliesUnmatched = _firefliesUnmatched.filter(r=>r.id!==transcriptId);
+  save(); renderSettings(); toast('Meeting added to '+p.name,'success');
+}
+function dismissFirefliesMeeting(transcriptId){
+  if (!Array.isArray(CONF.fireflies.dismissed)) CONF.fireflies.dismissed = [];
+  CONF.fireflies.dismissed.push(transcriptId);
+  _firefliesUnmatched = _firefliesUnmatched.filter(r=>r.id!==transcriptId);
+  save(true); renderSettings();
+}
+
 async function initCloudSync(){
-  if (!cloudConfigured()) return;
-  await cloudPull(true);
+  if (cloudConfigured()) {
+    await cloudPull(true);
+    await syncCreativeResearch(true);
+  }
+  if (firefliesConfigured() && CONF.fireflies.autoSync) await syncFireflies(true);
 }
 </script>
 <script>
@@ -2208,14 +2461,8 @@ function editPlatform(pid){
         ${fld('Short code','f-short',p.short,{ph:'2 letters, e.g. Zm'})}
         ${fld('Accent colour','f-color',p.color,{type:'color'})}
       </div>
-      <div class="grid-2">
-        ${fld('Category','f-cat',p.category,{ph:'Native, Social, Push…'})}
-        ${fld('Access model','f-access',p.accessModel,{ph:'Rep-led, self-serve…'})}
-      </div>
-      <div class="grid-2">
-        ${fld('Status','f-status',p.status,{type:'select',options:Object.entries(STATUS).map(([k,v])=>[k,v.label])})}
-        ${fld('Priority','f-prio',p.priority,{type:'select',options:Object.entries(PRIORITY)})}
-      </div>
+      ${fld('Category','f-cat',p.category,{ph:'Native, Social, Push…'})}
+      ${fld('Status','f-status',p.status,{type:'select',options:Object.entries(STATUS).map(([k,v])=>[k,v.label])})}
       ${fld('Custom logo image URL','f-logourl',p.logoUrl,{ph:'https://…/logo.png',
         hint: hasBrandIcon
           ? `Leave blank to keep the official ${esc(p.name)} mark. Paste a direct image link to override it.`
@@ -2227,7 +2474,7 @@ function savePlatform(pid){
   const name = V('f-name'); if(!name){ toast('Give the platform a name','error'); return; }
   const color = V('f-color');
   const data = { name, short:V('f-short')||name.slice(0,2), color, fg: isLight(color)?'#111827':'#ffffff',
-    category:V('f-cat'), accessModel:V('f-access'), status:V('f-status'), priority:V('f-prio'), logoUrl:V('f-logourl') };
+    category:V('f-cat'), status:V('f-status'), logoUrl:V('f-logourl') };
   if (pid) Object.assign(P(pid), data);
   else { const np = seedPlatform(data); S.platforms.push(np); curPid = np.id; }
   save(); closeModal(); render(); toast(pid?'Platform updated':'Platform added','success');
@@ -2468,14 +2715,21 @@ function editResearch(pid, rid){
 }
 function saveResearch(pid, rid){
   const slug = V('f-rslug'); if(!slug){ toast('Add the slug','error'); return; }
-  const d = { label:V('f-rlabel')||slug, slug };
+  const d = { label:V('f-rlabel')||slug, slug, auto:false };
   if (rid) Object.assign(P(pid).research.find(x=>x.id===rid), d);
   else P(pid).research.push(Object.assign({id:uid()}, d));
   save(); closeModal(); renderPlatform(); toast(rid?'Research link updated':'Research board linked','success');
 }
 function delResearch(pid, rid){
   const r = P(pid).research.find(x=>x.id===rid);
-  confirmModal('Remove this link?', `“${esc(r.label||r.slug)}” will no longer show on ${esc(P(pid).name)}.`, 'Remove', ()=>{
+  const msg = r.auto
+    ? `“${esc(r.label||r.slug)}” will no longer show here. Since this was auto-synced, it won't come back on the next sync unless you re-add it.`
+    : `“${esc(r.label||r.slug)}” will no longer show on ${esc(P(pid).name)}.`;
+  confirmModal('Remove this link?', msg, 'Remove', ()=>{
+    if (r.auto) {
+      if (!Array.isArray(CONF.autoSyncDismissed)) CONF.autoSyncDismissed = [];
+      CONF.autoSyncDismissed.push({ platformId:pid, slug:r.slug });
+    }
     P(pid).research = P(pid).research.filter(x=>x.id!==rid); save(); renderPlatform(); toast('Research link removed');
   }, true);
 }
@@ -2626,7 +2880,7 @@ applyTheme();
 applySidebarState();
 render();
 dot('saved', cloudConfigured() ? 'Connecting…' : 'Saved locally');
-if (cloudConfigured()) initCloudSync();
+initCloudSync();
 window.addEventListener('resize', ()=>{ if(window.innerWidth>1024) closeSidebar(); });
 </script>
 </body>
