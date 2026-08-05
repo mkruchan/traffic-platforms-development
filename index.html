@@ -321,7 +321,8 @@ tr.drag-drop-after  td { box-shadow: inset 0 -2px 0 0 var(--accent); }
 .ai-tag.soon { color:var(--amber-text); font-weight:600; }
 
 /* ═══ MEETING LOG ═══ */
-.mt-entry { border-bottom:1px solid var(--border-light); padding:16px 20px; }
+.mt-entry { border-bottom:1px solid var(--border-light); padding:16px 20px; transition:background .13s; }
+.mt-entry:hover { background:var(--bg-secondary); }
 .mt-entry:last-child { border-bottom:none; }
 .mt-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
 .mt-date { font-size:13px; font-weight:600; }
@@ -893,7 +894,7 @@ function defaultConf(){
     researchBase:'https://mkruchan.github.io/creative-research/',
     everflowBase:'', sb:{ ...SHARED_SUPABASE }, theme:'auto', sidebarCollapsed:false,
     autoSyncDismissed:[], lastResearchSync:null,
-    fireflies:{ apiKey:'', autoSync:false, lastSync:null, dismissed:[] } };
+    fathom:{ apiKey:'', autoSync:false, lastSync:null, dismissed:[] } };
 }
 
 function load(){
@@ -1225,7 +1226,7 @@ function pfCard(p){
     </div>
     <div class="pf-stats">
       <div class="pf-stat"><div class="pf-stat-v ${pnlClass(t.profit)}">${t.offers?money(t.profit):'—'}</div><div class="pf-stat-l">P&amp;L</div></div>
-      <div class="pf-stat"><div class="pf-stat-v">${t.offers}</div><div class="pf-stat-l">Offers</div></div>
+      <div class="pf-stat"><div class="pf-stat-v">${t.offers}</div><div class="pf-stat-l">Offers tested</div></div>
       <div class="pf-stat"><div class="pf-stat-v">${t.openActions}</div><div class="pf-stat-l">Action items</div></div>
     </div>
     ${nextAction ? `<div class="pf-next">
@@ -1606,23 +1607,24 @@ function tabActions(p){
 }
 
 function meetingCard(m, showPlatform){
-  return `<div class="mt-entry">
+  return `<div class="mt-entry" style="cursor:pointer" onclick="openMeetingDetail('${m.pid}','${m.id}')">
     <div class="mt-head">
       <span class="mt-date">${niceDate(m.date)}</span>
+      ${m.title?`<span style="font-size:12.5px;font-weight:600">${esc(m.title)}</span>`:''}
       ${showPlatform?`<span class="badge b-grey">${esc(m.pname)}</span>`:''}
-      ${m.firefliesId?'<span class="badge b-purple">Fireflies</span>':''}
+      ${m.fathomId?'<span class="badge b-purple">Fathom</span>':''}
       ${m.attendees?`<span class="mt-who">${esc(m.attendees)}</span>`:''}
-      <div style="margin-left:auto" class="row-actions">
-        ${m.transcriptUrl?`<a class="icon-btn" href="${esc(m.transcriptUrl)}" target="_blank" rel="noopener" title="View full transcript">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9"/><path d="M10 2h4v4M14 2 8 8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>`:''}
+      <div style="margin-left:auto" class="row-actions" onclick="event.stopPropagation()">
+        ${m.shareUrl?`<button class="icon-btn" onclick="openMeetingDetail('${m.pid}','${m.id}',true)" title="Play recording">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2.5v11l9-5.5z" fill="currentColor" stroke="none"/></svg></button>`:''}
         <button class="icon-btn" onclick="editMeeting('${m.pid}','${m.id}')" title="Edit">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
         <button class="icon-btn danger" onclick="delMeeting('${m.pid}','${m.id}')" title="Delete">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
       </div>
     </div>
-    ${m.notes?`<div class="mt-body">${esc(m.notes)}</div>`:''}
-    ${m.decisions?`<div class="mt-body" style="margin-top:9px;padding:10px 12px;background:var(--teal-bg);color:var(--teal-text);border-radius:var(--radius-md)"><strong style="color:inherit">Agreed:</strong> ${esc(m.decisions)}</div>`:''}
+    ${m.notes?`<div class="mt-body">${esc(m.notes.length>220?m.notes.slice(0,220)+'…':m.notes)}</div>`:''}
+    ${m.decisions?`<div class="mt-body" style="margin-top:9px;padding:10px 12px;background:var(--teal-bg);color:var(--teal-text);border-radius:var(--radius-md)"><strong style="color:inherit">Agreed:</strong> ${esc(m.decisions.length>160?m.decisions.slice(0,160)+'…':m.decisions)}</div>`:''}
   </div>`;
 }
 
@@ -1896,9 +1898,9 @@ function statusPill(){
   const [cls,label] = map[sbState] || map.idle;
   return `<span class="badge ${cls}">${label}</span>`;
 }
-function firefliesStatusPill(){
+function fathomStatusPill(){
   const map = { connected:['b-teal','Connected'], connecting:['b-amber','Connecting…'], error:['b-coral','Blocked or failed'], idle:['b-grey','Not tested yet'] };
-  const [cls,label] = map[firefliesState] || map.idle;
+  const [cls,label] = map[fathomState] || map.idle;
   return `<span class="badge ${cls}">${label}</span>`;
 }
 function renderSettings(){
@@ -1950,40 +1952,41 @@ function renderSettings(){
 
       <div class="section">
         <div class="section-header"><div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20M8 4v4"/></svg></div>
-          <div><h2>Fireflies sync</h2><div class="sh-sub">Auto-log meetings from Fireflies transcripts</div></div>
-          <div class="sh-actions">${firefliesConfigured()?firefliesStatusPill():''}</div></div>
+          <div><h2>Fathom sync</h2><div class="sh-sub">Auto-log meetings, with playback, from Fathom recordings</div></div>
+          <div class="sh-actions">${fathomConfigured()?fathomStatusPill():''}</div></div>
         <div class="section-body">
           <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
-            <b>Before you rely on this:</b> Fireflies' API is built for server-to-server use — every example in their own docs runs from a backend, never a browser. There's a real chance their API blocks direct requests from here (a CORS restriction), which "Test connection" below will reveal immediately. If it's blocked, the fix is a small server-side relay (a Cloudflare Worker, for example) — ask me and I'll write one.
+            <b>Before you rely on this:</b> Fathom's API is built for server-to-server use — every example in their own docs runs from a backend, never a browser. There's a real chance their API blocks direct requests from here (a CORS restriction), which "Test connection" below will reveal immediately. If it's blocked, the fix is a small server-side relay (a Cloudflare Worker, for example) — ask me and I'll write one.
+            <br><br><b>On playback:</b> Fathom's API only gives a link to their own hosted recording page — there's no raw audio/video file to embed as a native player. Clicking "Play recording" on a meeting embeds that page in an iframe; if your browser blocks the embed, an "Open in Fathom" link is always shown right next to it as a guaranteed fallback.
           </div>
           <div class="grid-2">
-            ${fld('Fireflies API key','f-ff-key',CONF.fireflies.apiKey,{type:'password',ph:'Paste your API key',hint:'From app.fireflies.ai → Integrations → Fireflies API'})}
+            ${fld('Fathom API key','f-fm-key',CONF.fathom.apiKey,{type:'password',ph:'Paste your API key',hint:'From your Fathom account settings → API'})}
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px">
-            <button class="toolbar-btn" onclick="CONF.fireflies.apiKey=V('f-ff-key');save(true);testFirefliesConnection()">Test connection</button>
-            <button class="toolbar-btn" onclick="CONF.fireflies.apiKey=V('f-ff-key');save(true);syncFireflies()">Sync now</button>
+            <button class="toolbar-btn" onclick="CONF.fathom.apiKey=V('f-fm-key');save(true);testFathomConnection()">Test connection</button>
+            <button class="toolbar-btn" onclick="CONF.fathom.apiKey=V('f-fm-key');save(true);syncFathom()">Sync now</button>
           </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;margin-bottom:10px">
-            <input type="checkbox" ${CONF.fireflies.autoSync?'checked':''} onchange="CONF.fireflies.autoSync=this.checked;save(true)">
+            <input type="checkbox" ${CONF.fathom.autoSync?'checked':''} onchange="CONF.fathom.autoSync=this.checked;save(true)">
             Sync automatically each time this page loads
           </label>
-          <div style="font-size:11.5px;color:var(--text-muted)">${CONF.fireflies.lastSync?'Last synced '+new Date(CONF.fireflies.lastSync).toLocaleString():'Not synced yet'}</div>
-          ${_firefliesUnmatched.length ? `
+          <div style="font-size:11.5px;color:var(--text-muted)">${CONF.fathom.lastSync?'Last synced '+new Date(CONF.fathom.lastSync).toLocaleString():'Not synced yet'}</div>
+          ${_fathomUnmatched.length ? `
             <div class="divider"></div>
-            <div class="field-label" style="margin-bottom:8px">Couldn't auto-match (${_firefliesUnmatched.length})</div>
+            <div class="field-label" style="margin-bottom:8px">Couldn't auto-match (${_fathomUnmatched.length})</div>
             <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px">No attendee's email domain or the title matched a platform's name. Assign manually or ignore.</div>
-            ${_firefliesUnmatched.map(row=>`
+            ${_fathomUnmatched.map(row=>`
               <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-light);flex-wrap:wrap">
                 <div style="flex:1;min-width:160px">
-                  <div style="font-size:12.5px;font-weight:600">${esc(row.title||'Untitled meeting')}</div>
-                  <div style="font-size:11px;color:var(--text-muted)">${row.date?niceDate(new Date(Number(row.date)).toISOString().slice(0,10)):''}</div>
+                  <div style="font-size:12.5px;font-weight:600">${esc(row.meeting_title||row.title||'Untitled meeting')}</div>
+                  <div style="font-size:11px;color:var(--text-muted)">${row.created_at?niceDate(String(row.created_at).slice(0,10)):''}</div>
                 </div>
-                <select class="inp" id="ff-assign-${esc(row.id)}" style="width:auto;font-size:11.5px;padding:5px 8px">
+                <select class="inp" id="fm-assign-${esc(row.id)}" style="width:auto;font-size:11.5px;padding:5px 8px">
                   <option value="">Assign to…</option>
                   ${S.platforms.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}
                 </select>
-                <button class="toolbar-btn xs" onclick="assignFirefliesMeeting('${esc(row.id)}',document.getElementById('ff-assign-${esc(row.id)}').value)">Add</button>
-                <button class="toolbar-btn xs" onclick="dismissFirefliesMeeting('${esc(row.id)}')">Ignore</button>
+                <button class="toolbar-btn xs" onclick="assignFathomMeeting('${esc(row.id)}',document.getElementById('fm-assign-${esc(row.id)}').value)">Add</button>
+                <button class="toolbar-btn xs" onclick="dismissFathomMeeting('${esc(row.id)}')">Ignore</button>
               </div>`).join('')}
           ` : ''}
         </div>
@@ -2269,22 +2272,22 @@ async function syncCreativeResearch(silent){
   }
 }
 
-/* ═══════════════ FIREFLIES SYNC ═══════════════
-   Meeting transcripts don't carry a "traffic platform" field, so matching is
-   a best-effort heuristic: (1) does any attendee's email domain match a
-   platform's saved POC email domain, (2) else does the platform's name
-   appear in the meeting title. Anything that matches neither shows up as
-   "unmatched" in Settings for a one-click manual assign. */
-let firefliesState = 'idle'; // idle | connecting | connected | error
-let _firefliesUnmatched = [];
+/* ═══════════════ FATHOM SYNC ═══════════════
+   Fathom's API has no raw audio/video file to embed — only a link to
+   their own hosted recording page (share_url). "Play" embeds that page
+   in an iframe with a guaranteed-working fallback link alongside it.
+   Meeting-to-platform matching is the same heuristic as before: match by
+   attendee email domain against a platform's saved POC email, else by
+   the platform's name appearing in the meeting title. */
+let fathomState = 'idle'; // idle | connecting | connected | error
+let _fathomUnmatched = [];
 
-function firefliesConfigured(){ return !!(CONF.fireflies && CONF.fireflies.apiKey); }
+function fathomConfigured(){ return !!(CONF.fathom && CONF.fathom.apiKey); }
 
-function matchFirefliesTranscript(row){
+function matchFathomMeeting(row){
   const emails = new Set();
-  if (row.organizer_email) emails.add(String(row.organizer_email).toLowerCase());
-  (row.participants||[]).forEach(e=>{ if(e) emails.add(String(e).toLowerCase()); });
-  (row.meeting_attendees||[]).forEach(a=>{ if(a && a.email) emails.add(String(a.email).toLowerCase()); });
+  if (row.recorded_by && row.recorded_by.email) emails.add(String(row.recorded_by.email).toLowerCase());
+  (row.calendar_invitees||[]).forEach(a=>{ if (a && a.email) emails.add(String(a.email).toLowerCase()); });
 
   const matches = new Set();
   S.platforms.forEach(p=>{
@@ -2292,106 +2295,108 @@ function matchFirefliesTranscript(row){
     if (domain) { const d = domain.toLowerCase(); if ([...emails].some(e=>e.endsWith('@'+d))) matches.add(p.id); }
   });
   if (!matches.size) {
-    const title = String(row.title||'').toLowerCase();
+    const title = String(row.title || row.meeting_title || '').toLowerCase();
     S.platforms.forEach(p=>{ if (title.includes(p.name.toLowerCase())) matches.add(p.id); });
   }
   return [...matches];
 }
 
-async function firefliesFetch(query, key){
+function fathomActionItemsToText(items){
+  if (!items) return '';
+  if (typeof items === 'string') return items;
+  if (Array.isArray(items)) {
+    return items.map(it => typeof it === 'string' ? it : (it.description || it.text || JSON.stringify(it))).join('\n');
+  }
+  return '';
+}
+
+async function fathomFetch(path, key){
   let res;
   try {
-    res = await fetch('https://api.fireflies.ai/graphql', {
-      method:'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
-      body: JSON.stringify({ query })
-    });
+    res = await fetch('https://api.fathom.ai/external/v1'+path, { headers: { 'X-Api-Key': key } });
   } catch(networkErr){
-    const e = new Error('Request was blocked before reaching Fireflies — almost always a CORS restriction from their API, not a bad key.');
+    const e = new Error('Request was blocked before reaching Fathom — almost always a CORS restriction from their API, not a bad key.');
     e.corsLikely = true; throw e;
   }
   const json = await res.json().catch(()=>({}));
-  if (!res.ok || json.errors) {
-    throw new Error((json.errors && json.errors[0]?.message) || ('HTTP '+res.status));
-  }
-  return json.data;
+  if (!res.ok) throw new Error(json.message || json.error || ('HTTP '+res.status));
+  return json;
 }
 
-async function testFirefliesConnection(){
-  const key = V('f-ff-key') || (CONF.fireflies||{}).apiKey;
+async function testFathomConnection(){
+  const key = V('f-fm-key') || (CONF.fathom||{}).apiKey;
   if (!key) { toast('Enter your API key first','error'); return; }
-  firefliesState = 'connecting'; if (view==='settings') renderSettings();
+  fathomState = 'connecting'; if (view==='settings') renderSettings();
   try {
-    const data = await firefliesFetch('{ user { name email num_transcripts } }', key);
-    firefliesState = 'connected';
-    toast(`Connected — ${data.user.name || data.user.email} · ${data.user.num_transcripts} transcripts`, 'success');
+    const data = await fathomFetch('/meetings?limit=1', key);
+    fathomState = 'connected';
+    toast(`Connected — Fathom API reachable (${(data.items||[]).length} meeting${(data.items||[]).length===1?'':'s'} in test page)`, 'success');
   } catch(e){
-    firefliesState = 'error';
+    fathomState = 'error';
     toast(e.corsLikely ? 'Blocked by the browser — see the note in Settings for why' : ('Connection failed: '+e.message), 'error');
   }
   if (view==='settings') renderSettings();
 }
 
-async function syncFireflies(silent){
-  if (!firefliesConfigured()){ if(!silent) toast('Add your Fireflies API key first','error'); return; }
-  firefliesState = 'connecting';
+async function syncFathom(silent){
+  if (!fathomConfigured()){ if(!silent) toast('Add your Fathom API key first','error'); return; }
+  fathomState = 'connecting';
   try {
-    const data = await firefliesFetch(
-      `{ transcripts(limit: 50) { id title date transcript_url organizer_email participants meeting_attendees { name email } summary { overview action_items } } }`,
-      CONF.fireflies.apiKey);
-    const rows = data.transcripts || [];
+    const data = await fathomFetch('/meetings?include_summary=true&include_action_items=true&limit=50', CONF.fathom.apiKey);
+    const rows = data.items || [];
     let added = 0;
-    _firefliesUnmatched = [];
+    _fathomUnmatched = [];
     rows.forEach(row=>{
-      const alreadyImported = S.platforms.some(p=>p.meetings.some(m=>m.firefliesId===row.id));
+      const alreadyImported = S.platforms.some(p=>p.meetings.some(m=>m.fathomId===row.id));
       if (alreadyImported) return;
-      const matches = matchFirefliesTranscript(row);
+      const matches = matchFathomMeeting(row);
       if (!matches.length) {
-        if (!(CONF.fireflies.dismissed||[]).includes(row.id)) _firefliesUnmatched.push(row);
+        if (!(CONF.fathom.dismissed||[]).includes(row.id)) _fathomUnmatched.push(row);
         return;
       }
       matches.forEach(pid=>{
         const p = P(pid);
-        const attendees = (row.meeting_attendees||[]).map(a=>a.name||a.email).filter(Boolean).join(', ');
+        const attendees = (row.calendar_invitees||[]).map(a=>a.name||a.email).filter(Boolean).join(', ');
         p.meetings.push({
-          id:uid(),
-          date: row.date ? new Date(Number(row.date)).toISOString().slice(0,10) : today(),
-          attendees, notes: (row.summary && row.summary.overview) || '',
-          decisions: (row.summary && row.summary.action_items) || '',
-          firefliesId: row.id, transcriptUrl: row.transcript_url || ''
+          id:uid(), title: row.meeting_title || row.title || '',
+          date: row.created_at ? String(row.created_at).slice(0,10) : today(),
+          attendees, notes: row.default_summary || '',
+          decisions: fathomActionItemsToText(row.action_items),
+          fathomId: row.id, shareUrl: row.share_url || row.url || ''
         });
         added++;
       });
     });
-    firefliesState = 'connected';
-    CONF.fireflies.lastSync = Date.now();
+    fathomState = 'connected';
+    CONF.fathom.lastSync = Date.now();
     if (added) { save(); render(); } else { save(true); }
     if (!silent) toast(added ? `Synced ${added} meeting${added===1?'':'s'}` : 'No new meetings to sync', 'success');
   } catch(e){
-    firefliesState = 'error';
+    fathomState = 'error';
     if (!silent) toast(e.corsLikely ? 'Sync blocked by the browser — see Settings' : ('Sync failed: '+e.message), 'error');
   }
   if (view==='settings') renderSettings();
 }
 
-function assignFirefliesMeeting(transcriptId, pid){
-  const row = _firefliesUnmatched.find(r=>r.id===transcriptId);
+function assignFathomMeeting(meetingId, pid){
+  const row = _fathomUnmatched.find(r=>r.id===meetingId);
   if (!row || !pid) return;
   const p = P(pid);
-  const attendees = (row.meeting_attendees||[]).map(a=>a.name||a.email).filter(Boolean).join(', ');
+  const attendees = (row.calendar_invitees||[]).map(a=>a.name||a.email).filter(Boolean).join(', ');
   p.meetings.push({
-    id:uid(), date: row.date ? new Date(Number(row.date)).toISOString().slice(0,10) : today(),
-    attendees, notes: (row.summary && row.summary.overview) || '',
-    decisions: (row.summary && row.summary.action_items) || '',
-    firefliesId: row.id, transcriptUrl: row.transcript_url || ''
+    id:uid(), title: row.meeting_title || row.title || '',
+    date: row.created_at ? String(row.created_at).slice(0,10) : today(),
+    attendees, notes: row.default_summary || '',
+    decisions: fathomActionItemsToText(row.action_items),
+    fathomId: row.id, shareUrl: row.share_url || row.url || ''
   });
-  _firefliesUnmatched = _firefliesUnmatched.filter(r=>r.id!==transcriptId);
+  _fathomUnmatched = _fathomUnmatched.filter(r=>r.id!==meetingId);
   save(); renderSettings(); toast('Meeting added to '+p.name,'success');
 }
-function dismissFirefliesMeeting(transcriptId){
-  if (!Array.isArray(CONF.fireflies.dismissed)) CONF.fireflies.dismissed = [];
-  CONF.fireflies.dismissed.push(transcriptId);
-  _firefliesUnmatched = _firefliesUnmatched.filter(r=>r.id!==transcriptId);
+function dismissFathomMeeting(meetingId){
+  if (!Array.isArray(CONF.fathom.dismissed)) CONF.fathom.dismissed = [];
+  CONF.fathom.dismissed.push(meetingId);
+  _fathomUnmatched = _fathomUnmatched.filter(r=>r.id!==meetingId);
   save(true); renderSettings();
 }
 
@@ -2400,7 +2405,7 @@ async function initCloudSync(){
     await cloudPull(true);
     await syncCreativeResearch(true);
   }
-  if (firefliesConfigured() && CONF.fireflies.autoSync) await syncFireflies(true);
+  if (fathomConfigured() && CONF.fathom.autoSync) await syncFathom(true);
 }
 </script>
 <script>
@@ -2655,14 +2660,49 @@ function delAction(pid, aid){
 }
 
 /* ═══════════════ MEETINGS ═══════════════ */
+function openMeetingDetail(pid, mid, autoPlay){
+  const m = P(pid).meetings.find(x=>x.id===mid);
+  const p = P(pid);
+  const playerHtml = m.shareUrl ? `
+    <div id="mtd-player-wrap" style="margin-top:14px">
+      <button class="toolbar-btn primary xs" id="mtd-play-btn" onclick="toggleMeetingPlayer('${esc(m.shareUrl)}')">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="margin-right:2px"><path d="M4 2.5v11l9-5.5z"/></svg>
+        Play recording
+      </button>
+      <a class="toolbar-btn xs" href="${esc(m.shareUrl)}" target="_blank" rel="noopener" style="margin-left:6px">Open in Fathom ↗</a>
+      <div id="mtd-player-slot" style="display:none;margin-top:10px"></div>
+      <div class="hint" style="margin-top:6px">Fathom's API only shares a link to their own hosted recording — this embeds that page directly. If it doesn't load below (some browsers block embedding), use "Open in Fathom" instead.</div>
+    </div>` : '';
+  openModal({ title: m.title || 'Meeting', sub: `${p.name} · ${niceDate(m.date)}${m.attendees?' · '+m.attendees:''}`, icon:'icon-purple', wide:true,
+    body: `
+      ${m.notes?`<div class="field"><label class="field-label">Notes</label><div style="font-size:13px;line-height:1.7;color:var(--text-secondary);white-space:pre-wrap">${esc(m.notes)}</div></div>`:''}
+      ${m.decisions?`<div class="field"><label class="field-label">Agreed / action items</label><div style="font-size:13px;line-height:1.7;background:var(--teal-bg);color:var(--teal-text);border-radius:var(--radius-md);padding:12px 14px;white-space:pre-wrap">${esc(m.decisions)}</div></div>`:''}
+      ${!m.notes && !m.decisions ? '<div style="color:var(--text-muted);font-size:13px">No notes recorded for this meeting.</div>' : ''}
+      ${playerHtml}`,
+    footer: `<button class="toolbar-btn" onclick="closeModal()">Close</button>
+      <button class="toolbar-btn primary" onclick="closeModal();editMeeting('${pid}','${mid}')">Edit</button>` });
+  if (autoPlay && m.shareUrl) setTimeout(()=>toggleMeetingPlayer(m.shareUrl), 50);
+}
+function toggleMeetingPlayer(shareUrl){
+  const slot = document.getElementById('mtd-player-slot');
+  if (!slot) return;
+  if (slot.style.display === 'none') {
+    slot.innerHTML = `<iframe src="${esc(shareUrl)}" style="width:100%;height:340px;border:1px solid var(--border-light);border-radius:8px" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+    slot.style.display = 'block';
+  } else {
+    slot.style.display = 'none';
+    slot.innerHTML = '';
+  }
+}
 function editMeeting(pid, mid){
   const m = (pid && mid) ? P(pid).meetings.find(x=>x.id===mid)
-    : { date:today(), attendees:'', notes:'', decisions:'' };
+    : { title:'', date:today(), attendees:'', notes:'', decisions:'' };
   openModal({ title: mid?'Edit meeting':'Log a meeting', sub: pid?P(pid).name:'', icon:'icon-purple', wide:true,
     body:`<div class="grid-2">
         ${!pid||!mid?fld('Platform','f-mpid',pid||S.platforms[0].id,{type:'select',options:S.platforms.map(p=>[p.id,p.name])}):''}
         ${fld('Date','f-mdate',m.date,{type:'date'})}
       </div>
+      ${fld('Title (optional)','f-mtitle',m.title,{ph:'e.g. Weekly sync'})}
       ${fld('Attendees','f-mwho',m.attendees,{ph:'Who was on the call'})}
       ${fld('Notes','f-mnotes',m.notes,{type:'textarea',style:'min-height:150px',ph:'What was discussed…'})}
       ${fld('Agreed / decided','f-mdec',m.decisions,{type:'textarea',style:'min-height:70px',ph:'The commitments made on the call',hint:'Turn each of these into an action item so nothing slips.'})}`,
@@ -2671,7 +2711,7 @@ function editMeeting(pid, mid){
 }
 function saveMeeting(pid, mid){
   const target = (mid && pid) ? pid : (V('f-mpid') || pid);
-  const d = { date:V('f-mdate')||today(), attendees:V('f-mwho'), notes:V('f-mnotes'), decisions:V('f-mdec') };
+  const d = { title:V('f-mtitle'), date:V('f-mdate')||today(), attendees:V('f-mwho'), notes:V('f-mnotes'), decisions:V('f-mdec') };
   const p = P(target);
   if (mid) Object.assign(p.meetings.find(x=>x.id===mid), d);
   else p.meetings.push(Object.assign({id:uid()}, d));
