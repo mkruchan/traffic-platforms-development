@@ -136,6 +136,10 @@ input, select, textarea, button { font-family:inherit; }
 .ds-hdr-collapse-btn:hover { background:var(--bg-secondary); color:var(--text-primary); border-color:var(--border-mid); }
 .autosave-status { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted);
   white-space:nowrap; padding:0 6px; }
+.readonly-banner { display:flex; align-items:center; justify-content:center; gap:10px;
+  background:var(--amber-bg); color:var(--amber-text); font-size:12.5px; font-weight:500;
+  padding:9px 20px; border-bottom:1px solid var(--border-light); }
+.readonly-banner button { flex-shrink:0; }
 .autosave-dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); flex-shrink:0;
   transition:background .3s, box-shadow .3s; }
 .autosave-dot.saving { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
@@ -538,6 +542,7 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
     </div>
   </div>
 
+  <div id="readonly-banner"></div>
   <div class="container">
     <div class="view active" id="view-dashboard"></div>
     <div class="view" id="view-platform"></div>
@@ -597,6 +602,7 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
 
 const KEY = 'liftiq_tpd_v1';
 const CFG = 'liftiq_tpd_cfg';
+const AUTHKEY = 'liftiq_tpd_auth';
 
 /* ── safe storage (falls back to memory in sandboxed frames) ── */
 const mem = {};
@@ -884,6 +890,14 @@ SEED.forEach(p => { const b = BRAND_DEFAULTS[p.name]; if (b) Object.assign(p, b)
 
 /* ═══════════════ STATE ═══════════════ */
 let S = null, CONF = null, view = 'dashboard', curPid = null, curTab = 'overview';
+// Auth session for edit access. Deliberately NOT part of CONF/S — those get pushed
+// to the shared cloud table, and a session token must never end up there.
+let AUTH = { accessToken:null, refreshToken:null, expiresAt:0, email:null, userId:null };
+function loadAuth(){
+  try { AUTH = Object.assign(AUTH, JSON.parse(store.get(AUTHKEY)||'{}')); } catch(e){}
+}
+function saveAuth(){ store.set(AUTHKEY, JSON.stringify(AUTH)); }
+function isSignedIn(){ return !!(AUTH.accessToken && AUTH.expiresAt > Date.now()); }
 
 const SHARED_SUPABASE = {
   url:'https://vdannnwpikfipdamphlu.supabase.co',
@@ -1120,6 +1134,7 @@ function applyTheme(){
 <script>
 /* ═══════════════ RENDER ═══════════════ */
 function render(){
+  renderReadonlyBanner();
   renderNav();
   if (view==='dashboard') renderDashboard();
   if (view==='platform')  renderPlatform();
@@ -1128,6 +1143,19 @@ function render(){
   if (view==='meetings')  renderMeetings();
   if (view==='report')    renderReport();
   if (view==='settings')  renderSettings();
+}
+function renderReadonlyBanner(){
+  const el = document.getElementById('readonly-banner');
+  if (!el) return;
+  if (!cloudConfigured()) { el.innerHTML = ''; return; } // no shared backend, nothing to gate
+  if (isSignedIn()) {
+    el.innerHTML = '';
+  } else {
+    el.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Viewing in read-only mode — changes won't be saved.</span>
+      <button class="toolbar-btn xs" onclick="openSignIn()">Sign in to edit</button>`;
+  }
 }
 
 function renderNav(){
@@ -1398,7 +1426,7 @@ function tabOverview(p){
             <div class="ai-row" ${dragAttrs(p.id,'research',r.id)}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:.5;flex-shrink:0;margin-top:2px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
               <div class="ai-text"><a class="link" href="${esc(researchUrl(r.slug))}" target="_blank" rel="noopener">${esc(r.label||r.slug)}</a>
-                ${r.auto?'<span class="badge b-blue" style="margin-left:6px;vertical-align:1px">Auto</span>':''}
+                ${r.auto?'<span class="badge b-blue" style="margin-left:6px;vertical-align:1px">Synced</span>':''}
                 <div class="ai-tags"><span class="ai-tag">${esc(researchUrl(r.slug))}</span></div></div>
               <div class="row-actions">
                 <span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span>
@@ -1953,10 +1981,10 @@ function renderSettings(){
           <div class="field"><label class="field-label">Everflow base URL (optional)</label>
             <input class="inp" value="${esc(CONF.everflowBase)}" placeholder="https://your-account.everflowclient.io" oninput="CONF.everflowBase=this.value;save(true)"></div>
           <div class="divider"></div>
-          <div class="field-label" style="margin-bottom:8px">Research auto-sync</div>
+          <div class="field-label" style="margin-bottom:8px">Research sync</div>
           <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:10px">
-            Reads the shared Creative Research database and auto-links any board whose Traffic Sources, Top Ads, or Funnels rows tag a matching platform — Facebook, TikTok, Google, Snapchat, Outbrain, Taboola, or Mintegral.
-            News Break and MediaGo can't be auto-matched — the research tool only has a generic "Native" tag that doesn't tell them apart, so those stay manual for now.
+            Reads the shared Creative Research database and links any board whose Traffic Sources, Top Ads, or Funnels rows tag a matching platform — Facebook, TikTok, Google, Snapchat, Outbrain, Taboola, or Mintegral.
+            News Break and MediaGo can't be matched this way — the research tool only has a generic "Native" tag that doesn't tell them apart, so those stay manual for now.
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <button class="toolbar-btn" onclick="syncCreativeResearch()">Sync now</button>
@@ -2044,6 +2072,43 @@ function renderSettings(){
               <button class="toolbar-btn primary" onclick="reconnectSharedDatabase()">Reconnect to shared database</button>
               <button class="toolbar-btn" onclick="openConnectSupabase()">Connect a different project</button>
             </div>
+          `}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-icon icon-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <div><h2>Access control</h2><div class="sh-sub">Everyone can view — only your account can save changes</div></div>
+          <div class="sh-actions">${isSignedIn()?'<span class="badge b-teal">Signed in</span>':'<span class="badge b-grey">Read-only</span>'}</div></div>
+        <div class="section-body">
+          ${isSignedIn() ? `
+            <div class="kv"><div class="kv-k">Signed in as</div><div class="kv-v">${esc(AUTH.email)}</div></div>
+            <button class="toolbar-btn danger" style="margin-top:10px" onclick="signOut()">Sign out</button>
+          ` : `
+            <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
+              Right now, anyone with this file or link can both view <b>and edit</b> — the same public key that lets the app read the shared database also lets it write. To lock that down, this needs real login: reads stay open to anyone, but writes get rejected by the database itself unless you're signed in as the one account allowed to make them.
+            </div>
+            <button class="toolbar-btn primary" onclick="openSignIn()">Sign in</button>
+            <div class="divider"></div>
+            <div class="field-label" style="margin-bottom:8px">One-time setup (do this once, in Supabase)</div>
+            <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.7">
+              <b>1.</b> Supabase dashboard → <b>Authentication → Users → Add user</b> — use your own email + a password. This becomes your login here.<br>
+              <b>2.</b> Copy that user's <b>UID</b> shown in the users list.<br>
+              <b>3.</b> Run this in the <b>SQL Editor</b>, swapping in your UID:
+            </div>
+            <div class="report-out" style="max-height:none;font-size:11px;margin-top:8px">-- reads stay open to anyone with the link
+drop policy if exists "rw" on tpd_state;
+create policy "read_all" on tpd_state for select using (true);
+
+-- only your account can write
+create policy "write_owner" on tpd_state for insert
+  with check (auth.uid() = 'PASTE-YOUR-UID-HERE');
+create policy "update_owner" on tpd_state for update
+  using (auth.uid() = 'PASTE-YOUR-UID-HERE')
+  with check (auth.uid() = 'PASTE-YOUR-UID-HERE');
+create policy "delete_owner" on tpd_state for delete
+  using (auth.uid() = 'PASTE-YOUR-UID-HERE');</div>
+            <div class="hint" style="margin-top:8px">Until you run this SQL, the database still accepts writes from anyone — signing in here is required, but this policy change is what actually makes it enforced.</div>
           `}
         </div>
       </div>
@@ -2137,24 +2202,90 @@ function resetAll(){
 }
 function sbBase(){ return CONF.sb.url.replace(/\/+$/,''); }
 function sbHeaders(extra){
-  return Object.assign({ 'apikey':CONF.sb.key, 'Authorization':'Bearer '+CONF.sb.key }, extra||{});
+  const bearer = isSignedIn() ? AUTH.accessToken : CONF.sb.key;
+  return Object.assign({ 'apikey':CONF.sb.key, 'Authorization':'Bearer '+bearer }, extra||{});
+}
+
+/* ═══════════════ AUTH (sign-in to edit) ═══════════════ */
+async function refreshAuthSession(){
+  if (!AUTH.refreshToken) return false;
+  try {
+    const res = await fetch(`${sbBase()}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST',
+      headers: { 'apikey':CONF.sb.key, 'Content-Type':'application/json' },
+      body: JSON.stringify({ refresh_token: AUTH.refreshToken })
+    });
+    const j = await res.json();
+    if (!res.ok || !j.access_token) { AUTH = { accessToken:null, refreshToken:null, expiresAt:0, email:null, userId:null }; saveAuth(); return false; }
+    AUTH = { accessToken:j.access_token, refreshToken:j.refresh_token, expiresAt: Date.now() + (j.expires_in||3600)*1000, email: j.user?.email||AUTH.email, userId: j.user?.id||AUTH.userId };
+    saveAuth();
+    return true;
+  } catch(e){ return false; }
+}
+async function signIn(){
+  const email = V('f-auth-email'), password = V('f-auth-pass');
+  if (!email || !password) { toast('Enter email and password','error'); return; }
+  try {
+    const res = await fetch(`${sbBase()}/auth/v1/token?grant_type=password`, {
+      method:'POST',
+      headers: { 'apikey':CONF.sb.key, 'Content-Type':'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const j = await res.json();
+    if (!res.ok || !j.access_token) throw new Error(j.error_description || j.msg || 'Sign-in failed');
+    AUTH = { accessToken:j.access_token, refreshToken:j.refresh_token, expiresAt: Date.now() + (j.expires_in||3600)*1000, email: j.user?.email||email, userId: j.user?.id };
+    saveAuth();
+    closeModal();
+    toast('Signed in as '+AUTH.email, 'success');
+    render();
+  } catch(e){ toast('Sign-in failed: '+e.message, 'error'); }
+}
+function signOut(){
+  AUTH = { accessToken:null, refreshToken:null, expiresAt:0, email:null, userId:null };
+  saveAuth(); render(); toast('Signed out — back to read-only');
+}
+function openSignIn(){
+  openModal({ title:'Sign in to edit', sub:'Read access stays open to anyone with the link — only your account can save changes.', icon:'icon-blue',
+    body: fld('Email','f-auth-email','',{type:'email',ph:'you@example.com'}) + fld('Password','f-auth-pass','',{type:'password'}),
+    footer: `<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
+      <button class="toolbar-btn primary" onclick="signIn()">Sign in</button>` });
 }
 async function cloudPush(silent){
   const c = CONF.sb; if(!c.url||!c.key){ if(!silent) toast('Add your Supabase URL and key first','error'); return; }
   sbState = 'connecting'; if(!silent) dot('saving','Pushing…');
+  // if our session token is about to expire, refresh it first rather than fail
+  if (AUTH.accessToken && AUTH.expiresAt < Date.now() + 60000) await refreshAuthSession();
   try {
-    const res = await fetch(`${sbBase()}/rest/v1/${c.table}`, {
+    let res = await fetch(`${sbBase()}/rest/v1/${c.table}`, {
       method:'POST',
       headers: sbHeaders({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=minimal' }),
       body: JSON.stringify({ id:c.row, data:{state:S,config:{...CONF, sb:undefined}}, updated_at:new Date().toISOString() })
     });
-    if(!res.ok) throw new Error(await res.text());
+    // token might have expired between page-load and this save — try one silent refresh + retry
+    if (res.status === 401 && AUTH.refreshToken) {
+      const refreshed = await refreshAuthSession();
+      if (refreshed) {
+        res = await fetch(`${sbBase()}/rest/v1/${c.table}`, {
+          method:'POST',
+          headers: sbHeaders({ 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=minimal' }),
+          body: JSON.stringify({ id:c.row, data:{state:S,config:{...CONF, sb:undefined}}, updated_at:new Date().toISOString() })
+        });
+      }
+    }
+    if (!res.ok) {
+      const isPermissionError = res.status === 401 || res.status === 403;
+      if (isPermissionError) {
+        const e = new Error(isSignedIn() ? 'Your account does not have write access.' : 'Sign in to save changes — you are viewing in read-only mode.');
+        e.isAuthError = true; throw e;
+      }
+      throw new Error(await res.text());
+    }
     sbState = 'connected';
     dot('saved','Cloud synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
     if(!silent) toast('Pushed to cloud','success');
   } catch(e){
-    sbState = 'error'; dot('error','Cloud push failed');
-    if(!silent) toast('Push failed — check URL, key and table','error');
+    sbState = 'error'; dot(e.isAuthError?'error':'error', e.isAuthError?'Read-only — sign in to save':'Cloud push failed');
+    if(!silent) toast(e.isAuthError ? e.message : 'Push failed — check URL, key and table', 'error');
   }
   if (view==='settings') renderSettings();
 }
@@ -2957,11 +3088,15 @@ function openExport(){
 
 /* ═══════════════ INIT ═══════════════ */
 load();
+loadAuth();
 applyTheme();
 applySidebarState();
 render();
 dot('saved', cloudConfigured() ? 'Connecting…' : 'Saved locally');
-initCloudSync();
+(async () => {
+  if (AUTH.accessToken && AUTH.expiresAt < Date.now() + 60000) await refreshAuthSession();
+  initCloudSync();
+})();
 window.addEventListener('resize', ()=>{ if(window.innerWidth>1024) closeSidebar(); });
 </script>
 </body>
