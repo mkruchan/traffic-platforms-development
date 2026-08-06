@@ -136,10 +136,6 @@ input, select, textarea, button { font-family:inherit; }
 .ds-hdr-collapse-btn:hover { background:var(--bg-secondary); color:var(--text-primary); border-color:var(--border-mid); }
 .autosave-status { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted);
   white-space:nowrap; padding:0 6px; }
-.readonly-banner { display:flex; align-items:center; justify-content:center; gap:10px;
-  background:var(--amber-bg); color:var(--amber-text); font-size:12.5px; font-weight:500;
-  padding:9px 20px; border-bottom:1px solid var(--border-light); }
-.readonly-banner button { flex-shrink:0; }
 .autosave-dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); flex-shrink:0;
   transition:background .3s, box-shadow .3s; }
 .autosave-dot.saving { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
@@ -568,7 +564,6 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
     </div>
   </div>
 
-  <div id="readonly-banner"></div>
   <div class="container">
     <div class="view active" id="view-dashboard"></div>
     <div class="view" id="view-platform"></div>
@@ -1215,7 +1210,6 @@ function applyTheme(){
 <script>
 /* ═══════════════ RENDER ═══════════════ */
 function render(){
-  renderReadonlyBanner();
   renderNav();
   if (view==='dashboard') renderDashboard();
   if (view==='platform')  renderPlatform();
@@ -1225,19 +1219,6 @@ function render(){
   if (view==='advertisers') renderAdvertisers();
   if (view==='report')    renderReport();
   if (view==='settings')  renderSettings();
-}
-function renderReadonlyBanner(){
-  const el = document.getElementById('readonly-banner');
-  if (!el) return;
-  if (!cloudConfigured()) { el.innerHTML = ''; return; } // no shared backend, nothing to gate
-  if (isSignedIn()) {
-    el.innerHTML = '';
-  } else {
-    el.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      <span>Viewing in read-only mode — changes won't be saved.</span>
-      <button class="toolbar-btn xs" onclick="openSignIn()">Sign in to edit</button>`;
-  }
 }
 
 function renderNav(){
