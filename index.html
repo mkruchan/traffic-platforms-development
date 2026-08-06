@@ -1973,6 +1973,9 @@ function renderAdvertisers(){
             <div class="kanban-card" draggable="true" ondragstart="kanbanDragStart(event,'${a.id}')" ondragend="kanbanDragEnd(event)" onclick="editAdvertiser('${a.id}')">
               <div class="kanban-card-name">${esc(a.name)}</div>
               ${a.contactName||a.contactEmail?`<div class="kanban-card-meta">${esc(a.contactName||'')}${a.contactName&&a.contactEmail?' · ':''}${esc(a.contactEmail||'')}</div>`:''}
+              ${a.linkedin?`<a href="${esc(a.linkedin)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);margin-top:4px;text-decoration:none">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM3.558 20.452h3.559V9H3.558v11.452z"/></svg>
+                LinkedIn</a>`:''}
               ${a.notes?`<div class="kanban-card-notes">${esc(a.notes)}</div>`:''}
             </div>`).join('')
           : '<div class="kanban-empty">Nothing here</div>'}
@@ -3198,7 +3201,7 @@ function toggleMeetingPlayer(videoUrl, audioUrl, transcriptUrl){
   }
 }
 function editAdvertiser(id){
-  const a = id ? S.advertisers.find(x=>x.id===id) : { name:'', status:'sequencing', contactName:'', contactEmail:'', notes:'' };
+  const a = id ? S.advertisers.find(x=>x.id===id) : { name:'', status:'sequencing', contactName:'', contactEmail:'', linkedin:'', notes:'' };
   openModal({ title: id?'Edit advertiser':'Add advertiser', sub:'New advertisers pipeline', icon:'icon-blue', wide:true,
     body:`${fld('Advertiser / offer name','f-adv-name',a.name,{ph:'e.g. Orivelle Health'})}
       ${fld('Status','f-adv-status',a.status,{type:'select',options:Object.entries(ADVERTISER_STATUS).map(([k,v])=>[k,v.label])})}
@@ -3206,6 +3209,7 @@ function editAdvertiser(id){
         ${fld('Contact name','f-adv-cname',a.contactName,{ph:'Who you are talking to'})}
         ${fld('Contact email','f-adv-cemail',a.contactEmail,{type:'email',ph:'name@advertiser.com'})}
       </div>
+      ${fld('LinkedIn','f-adv-linkedin',a.linkedin,{ph:'https://linkedin.com/in/…',hint:'Their profile or company page — shown as a quick link on the card.'})}
       ${fld('Notes','f-adv-notes',a.notes,{type:'textarea',style:'min-height:90px',ph:'Where things stand, next step, terms discussed…'})}`,
     footer: ftr(`saveAdvertiser(${id?`'${id}'`:'null'})`,
       id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delAdvertiser('${id}')">Delete</button>`:'') });
@@ -3213,7 +3217,7 @@ function editAdvertiser(id){
 function saveAdvertiser(id){
   const name = V('f-adv-name'); if(!name){ toast('Give the advertiser a name','error'); return; }
   const d = { name, status:V('f-adv-status'), contactName:V('f-adv-cname'), contactEmail:V('f-adv-cemail'),
-    notes:V('f-adv-notes'), updatedAt: new Date().toISOString() };
+    linkedin:V('f-adv-linkedin'), notes:V('f-adv-notes'), updatedAt: new Date().toISOString() };
   if (id) Object.assign(S.advertisers.find(x=>x.id===id), d);
   else S.advertisers.push(Object.assign({ id:uid(), createdAt:new Date().toISOString() }, d));
   save(); closeModal(); renderAdvertisers(); renderNav(); toast(id?'Advertiser updated':'Advertiser added','success');
