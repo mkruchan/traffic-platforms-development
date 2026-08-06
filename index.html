@@ -628,7 +628,7 @@ const STATUS = {
   dead:        { label:'Closed',       cls:'b-coral',  dot:'#ef4444', order:8 }
 };
 const OFFER_STATUS = {
-  queued:     { label:'Queued',     cls:'b-grey'   },
+  queued:     { label:'To test',    cls:'b-amber'  },
   testing:    { label:'Testing',    cls:'b-blue'   },
   live:       { label:'Live',       cls:'b-teal'   },
   paused:     { label:'Paused',     cls:'b-amber'  },
@@ -918,6 +918,7 @@ function load(){
   if (!S || !Array.isArray(S.platforms) || !S.platforms.length) {
     S = { version:1, created:Date.now(), updated:Date.now(), platforms:SEED };
   }
+  if (!S.offerCatalog || typeof S.offerCatalog !== 'object') S.offerCatalog = {};
   try { CONF = Object.assign(defaultConf(), JSON.parse(store.get(CFG)||'{}')); } catch(e){ CONF = defaultConf(); }
   // if this browser never manually connected/disconnected a Supabase project (both fields still
   // empty from an older default), pick up the shared team project automatically
@@ -1032,6 +1033,49 @@ function allActions(){
 function allOffers(){
   const out=[]; S.platforms.forEach(p=>p.offers.forEach(o=>out.push({...o, pid:p.id, pname:p.name, pcolor:p.color})));
   return out;
+}
+
+/* ═══════════════ OFFER IDENTITY (synced by name across platforms) ═══════════════
+   Offers keep their own spend/revenue/status per platform (that's genuinely
+   different per platform), but name, research link, and description are
+   shared — set it once anywhere, it shows everywhere that name appears. */
+function normOfferName(name){ return String(name||'').trim().toLowerCase(); }
+function offerCatalogEntry(name){
+  const key = normOfferName(name);
+  if (!key) return null;
+  if (!S.offerCatalog[key]) S.offerCatalog[key] = { displayName: name, researchSlug:'', researchLabel:'', autoLinked:false, description:'' };
+  return S.offerCatalog[key];
+}
+function offersByName(){
+  const groups = {};
+  allOffers().forEach(o=>{
+    const key = normOfferName(o.name);
+    if (!key) return;
+    if (!groups[key]) groups[key] = { name:o.name, key, instances:[], spend:0, revenue:0, profit:0, statuses:new Set() };
+    const g = groups[key];
+    const t = offerPnl(o);
+    g.instances.push(o);
+    g.spend += t.spend; g.revenue += t.rev; g.profit += t.profit;
+    g.statuses.add(o.status);
+    if (o.name && o.name.length > g.name.length) g.name = o.name; // prefer the most descriptive casing/version seen
+  });
+  const cat = S.offerCatalog || {};
+  return Object.values(groups).map(g => ({ ...g, catalog: cat[g.key] || null,
+    toTest: g.instances.filter(o=>o.status==='queued'||o.status==='not_tested').length,
+    roi: g.spend>0 ? (g.profit/g.spend)*100 : 0 }));
+}
+// Call whenever a research link is set/changed on one instance — propagates
+// to the shared catalog and to every other platform's offer sharing that name.
+function syncOfferResearchLink(name, slug, label, auto){
+  const entry = offerCatalogEntry(name);
+  if (!entry) return;
+  entry.researchSlug = slug || '';
+  entry.researchLabel = label || slug || '';
+  entry.autoLinked = !!auto;
+  const key = normOfferName(name);
+  S.platforms.forEach(p => p.offers.forEach(o => {
+    if (normOfferName(o.name) === key) o.researchSlug = slug || '';
+  }));
 }
 function allMeetings(){
   const out=[]; S.platforms.forEach(p=>p.meetings.forEach(m=>out.push({...m, pid:p.id, pname:p.name, pcolor:p.color})));
@@ -1558,7 +1602,7 @@ function offerRowsHtml(list, showPlatform){
     const untested = o.status==='not_tested'||o.status==='queued';
     return `<tr>
       ${showPlatform?`<td><div style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:${o.pcolor};flex-shrink:0"></span>${esc(o.pname)}</div></td>`:''}
-      <td><div style="font-weight:600">${esc(o.name)}</div>
+      <td><div style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="openOfferDetail('${esc(encodeURIComponent(o.name))}')">${esc(o.name)}</div>
         ${o.reason&&untested?`<div style="font-size:11px;color:var(--amber-text);margin-top:2px">${esc(o.reason)}</div>`:''}
         ${o.notes&&!untested?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(o.notes)}</div>`:''}</td>
       <td>${esc(o.vertical||'—')}</td>
@@ -1748,6 +1792,24 @@ function renderOffers(){
     <div class="stat-card"><div class="stat-label">Never tested</div>
       <div class="stat-value">${nt}</div><div class="stat-sub">each needs a documented reason</div></div>
   </div>
+
+  ${(()=>{ const toTest = allOffers().filter(o=>o.status==='queued'||o.status==='not_tested');
+    if (!toTest.length) return '';
+    return `<div class="section">
+      <div class="section-header">
+        <div class="section-icon icon-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div><h2>To test</h2><div class="sh-sub">${toTest.length} offer${toTest.length===1?'':'s'} queued or not yet run</div></div>
+      </div>
+      <div class="section-body flush">${toTest.map(o=>`
+        <div class="ai-row">
+          <span style="width:7px;height:7px;border-radius:50%;background:${o.pcolor};flex-shrink:0;margin-top:5px"></span>
+          <div class="ai-text" style="cursor:pointer" onclick="openOfferDetail('${esc(encodeURIComponent(o.name))}')">
+            <b>${esc(o.name)}</b>
+            <div class="ai-tags"><span class="ai-tag">${esc(o.pname)}</span>${o.reason?`<span class="ai-tag">· ${esc(o.reason)}</span>`:''}</div>
+          </div>
+          <button class="toolbar-btn xs" onclick="editOffer('${o.pid}','${o.id}')">Update</button>
+        </div>`).join('')}</div>
+    </div>`; })()}
 
   <div class="section">
     <div class="section-header">
@@ -2084,6 +2146,46 @@ function renderSettings(){
           ${isSignedIn() ? `
             <div class="kv"><div class="kv-k">Signed in as</div><div class="kv-v">${esc(AUTH.email)}</div></div>
             <button class="toolbar-btn danger" style="margin-top:10px" onclick="signOut()">Sign out</button>
+            <div class="divider"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="field-label" style="margin-bottom:0">Who can edit</div>
+              <button class="toolbar-btn xs" onclick="openAddEditor()">+ Add editor</button>
+            </div>
+            ${_editorsLoadError ? `
+              <div style="font-size:12px;color:var(--coral-text);line-height:1.6;margin-bottom:10px">${esc(_editorsLoadError)}</div>
+              <div class="report-out" style="max-height:none;font-size:11px">create table tpd_editors (
+  user_id uuid primary key,
+  email text,
+  added_at timestamptz default now()
+);
+alter table tpd_editors enable row level security;
+create policy "editors_manage" on tpd_editors for all
+  using (auth.uid() in (select user_id from tpd_editors))
+  with check (auth.uid() in (select user_id from tpd_editors));
+
+-- bootstrap: add yourself once, directly (swap in your UID)
+insert into tpd_editors (user_id, email) values ('PASTE-YOUR-UID-HERE', 'you@example.com');
+
+-- then point tpd_state's write policies at this table instead of one fixed UID
+drop policy if exists "write_owner" on tpd_state;
+drop policy if exists "update_owner" on tpd_state;
+drop policy if exists "delete_owner" on tpd_state;
+create policy "write_owner" on tpd_state for insert
+  with check (auth.uid() in (select user_id from tpd_editors));
+create policy "update_owner" on tpd_state for update
+  using (auth.uid() in (select user_id from tpd_editors))
+  with check (auth.uid() in (select user_id from tpd_editors));
+create policy "delete_owner" on tpd_state for delete
+  using (auth.uid() in (select user_id from tpd_editors));</div>
+            ` : (_editorsList.length ? _editorsList.map(ed => `
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-light)">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12.5px;font-weight:600">${esc(ed.email || 'No label')}</div>
+                  <div style="font-size:10.5px;color:var(--text-muted);font-family:ui-monospace,monospace">${esc(ed.user_id)}</div>
+                </div>
+                ${ed.user_id === AUTH.userId ? '<span class="badge b-grey">You</span>' : `<button class="icon-btn danger" onclick="removeEditor('${esc(ed.user_id)}','${esc(ed.email||ed.user_id)}')" title="Remove"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>`}
+              </div>`).join('')
+              : '<div class="hint">No editors listed yet — click "+ Add editor" once they have a Supabase login.</div>')}
           ` : `
             <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
               Right now, anyone with this file or link can both view <b>and edit</b> — the same public key that lets the app read the shared database also lets it write. To lock that down, this needs real login: reads stay open to anyone, but writes get rejected by the database itself unless you're signed in as the one account allowed to make them.
@@ -2178,6 +2280,7 @@ function importJSON(input){
   r.readAsText(f);
 }
 function load2(){
+  if (!S.offerCatalog || typeof S.offerCatalog !== 'object') S.offerCatalog = {};
   S.platforms.forEach(p=>{ const base = seedPlatform({});
     ['poc','strategy'].forEach(k=>p[k]=Object.assign({},base[k],p[k]||{}));
     ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
@@ -2207,6 +2310,62 @@ function sbHeaders(extra){
 }
 
 /* ═══════════════ AUTH (sign-in to edit) ═══════════════ */
+/* ═══════════════ EDITOR MANAGEMENT ═══════════════
+   Backed by a real Supabase table (tpd_editors) with its own RLS policy —
+   only existing editors can view or change this list, and tpd_state's write
+   policies check against it. Adding someone here only works because the
+   database itself allows it; this isn't a client-side-only permission list. */
+let _editorsList = [];
+let _editorsLoadError = null;
+
+async function fetchEditors(){
+  if (!isSignedIn()) { _editorsList = []; return; }
+  try {
+    const res = await fetch(`${sbBase()}/rest/v1/tpd_editors?select=user_id,email,added_at&order=added_at.asc`,
+      { headers: sbHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    _editorsList = await res.json();
+    _editorsLoadError = null;
+  } catch(e){
+    _editorsList = [];
+    _editorsLoadError = 'Could not load the editor list — the tpd_editors table may not exist yet. See setup below.';
+  }
+  if (view==='settings') renderSettings();
+}
+async function addEditor(){
+  const uid = V('f-editor-uid').trim(), email = V('f-editor-email').trim();
+  if (!uid) { toast('Paste their user UID','error'); return; }
+  try {
+    const res = await fetch(`${sbBase()}/rest/v1/tpd_editors`, {
+      method:'POST',
+      headers: sbHeaders({ 'Content-Type':'application/json', 'Prefer':'return=minimal' }),
+      body: JSON.stringify({ user_id: uid, email: email || null })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    closeModal(); toast('Editor added','success');
+    await fetchEditors();
+  } catch(e){ toast('Could not add editor — check the UID and that setup below has been run','error'); }
+}
+async function removeEditor(uid, label){
+  confirmModal('Remove editor access?', `“${esc(label||uid)}” will no longer be able to save changes.`, 'Remove', async ()=>{
+    try {
+      const res = await fetch(`${sbBase()}/rest/v1/tpd_editors?user_id=eq.${encodeURIComponent(uid)}`, {
+        method:'DELETE', headers: sbHeaders()
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast('Editor removed'); await fetchEditors();
+    } catch(e){ toast('Could not remove editor','error'); }
+  }, true);
+}
+function openAddEditor(){
+  openModal({ title:'Add an editor', sub:'They need a Supabase Auth login first — see the note below', icon:'icon-blue',
+    body: fld('Their user UID','f-editor-uid','',{ph:'from Authentication → Users in Supabase'})
+      + fld('Label (optional)','f-editor-email','',{ph:'their email, just so you recognize them in the list'})
+      + `<div class="hint">Find their UID: Supabase dashboard → Authentication → Users → click their row → copy the UID shown there. Create the user first if they don't have one yet.</div>`,
+    footer: `<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
+      <button class="toolbar-btn primary" onclick="addEditor()">Add</button>` });
+}
+
 async function refreshAuthSession(){
   if (!AUTH.refreshToken) return false;
   try {
@@ -2238,6 +2397,7 @@ async function signIn(){
     closeModal();
     toast('Signed in as '+AUTH.email, 'success');
     render();
+    fetchEditors();
   } catch(e){ toast('Sign-in failed: '+e.message, 'error'); }
 }
 function signOut(){
@@ -2424,8 +2584,30 @@ async function syncCreativeResearch(silent){
       });
     });
     CONF.lastResearchSync = Date.now();
-    if (added) { save(); render(); } else { save(true); }
-    if (!silent) toast(added ? `Synced ${added} new research link${added===1?'':'s'}` : 'Already up to date', 'success');
+
+    // Also match offer names against research board titles — e.g. offer "OBD Fuel
+    // Saver" found inside board title "OBD Fuel Saver - SynGas - CPS - Multi-GEO (8889)".
+    // Never touches a link the user set manually; only fills in ones still unset or
+    // still auto-linked from a previous sync.
+    let offersLinked = 0;
+    offersByName().forEach(g => {
+      const cat = S.offerCatalog[g.key];
+      if (cat && cat.researchSlug) return; // already linked (manual or auto) — leave it alone
+      if (g.name.trim().length < 3) return; // too short to match safely
+      const nameLower = g.name.toLowerCase();
+      const match = rows.find(row => row.name && String(row.name).toLowerCase().includes(nameLower));
+      if (!match) return;
+      const slug = offerSlugFromTitle(match.name);
+      if (!slug) return;
+      syncOfferResearchLink(g.name, slug, match.name, true);
+      offersLinked++;
+    });
+
+    const totalNew = added + offersLinked;
+    if (totalNew) { save(); render(); } else { save(true); }
+    if (!silent) toast(totalNew
+      ? `Synced ${added} research link${added===1?'':'s'}${offersLinked?` · linked ${offersLinked} offer${offersLinked===1?'':'s'} to research`:''}`
+      : 'Already up to date', 'success');
     if (view==='settings') renderSettings();
   } catch(e){
     if (!silent) toast('Sync failed — check the shared connection','error');
@@ -2757,13 +2939,90 @@ function moveStage(pid, sid, dir){
 }
 
 /* ═══════════════ OFFERS ═══════════════ */
+function onOfferNameInput(name){
+  const slugField = document.getElementById('f-oslug');
+  const hintField = document.getElementById('f-oslug-hint');
+  if (!slugField || slugField.value) return; // don't clobber something already typed
+  const cat = S.offerCatalog[normOfferName(name)];
+  if (cat && cat.researchSlug) {
+    slugField.value = cat.researchSlug;
+    if (hintField) hintField.innerHTML = `Inherited from another platform testing "${esc(name)}" — resolves to ${esc(researchUrl(cat.researchSlug))}.`;
+  }
+}
+function openOfferDetail(encodedName){
+  const name = decodeURIComponent(encodedName);
+  const key = normOfferName(name);
+  const group = offersByName().find(g => g.key === key);
+  if (!group) { toast('Offer not found','error'); return; }
+  const cat = S.offerCatalog[key];
+  const platformsWithThis = new Set(group.instances.map(o=>o.pid));
+  const availablePlatforms = S.platforms.filter(p=>!platformsWithThis.has(p.id));
+
+  const rows = group.instances.map(o => {
+    const t = offerPnl(o);
+    const untested = o.status==='queued'||o.status==='not_tested';
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:7px">${logoChip(P(o.pid), 20)}<b>${esc(o.pname)}</b></div></td>
+      <td>${offerBadge(o.status)}</td>
+      <td style="font-size:11.5px;color:var(--text-secondary)">${o.launched?niceDate(o.launched):'—'}</td>
+      <td class="num">${untested&&!t.spend?'—':money(t.spend)}</td>
+      <td class="num">${untested&&!t.rev?'—':money(t.rev)}</td>
+      <td class="num ${pnlClass(t.profit)}">${untested&&!t.spend&&!t.rev?'—':money(t.profit)}</td>
+      <td style="width:60px"><div class="row-actions">
+        <button class="icon-btn" onclick="closeModal();editOffer('${o.pid}','${o.id}')" title="Edit">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  const researchHtml = cat && cat.researchSlug ? `
+    <div class="field"><label class="field-label">Creative research</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a class="link" href="${esc(researchUrl(cat.researchSlug))}" target="_blank" rel="noopener">${esc(cat.researchLabel||cat.researchSlug)}</a>
+        ${cat.autoLinked?'<span class="badge b-blue">Auto-matched</span>':''}
+      </div></div>
+  ` : `<div class="hint" style="margin-bottom:14px">No research board linked yet — add a research slug from any "Edit offer" form and it'll show here and on every platform testing this offer.</div>`;
+
+  openModal({ title: group.name, sub: `Tested on ${group.instances.length} platform${group.instances.length===1?'':'s'}${group.toTest?` · ${group.toTest} still to test`:''}`, icon:'icon-teal', wide:true,
+    body: `
+      <div class="stat-grid" style="margin-bottom:16px">
+        <div class="stat-card"><div class="stat-label">Net P&amp;L</div><div class="stat-value ${pnlClass(group.profit)}">${money(group.profit)}</div>
+          <div class="stat-sub">${money(group.revenue)} rev · ${money(group.spend)} spend</div></div>
+        <div class="stat-card"><div class="stat-label">ROI</div><div class="stat-value ${pnlClass(group.profit)}">${group.spend>0?pct(group.roi):'—'}</div></div>
+        <div class="stat-card"><div class="stat-label">To test</div><div class="stat-value">${group.toTest}</div>
+          <div class="stat-sub">of ${group.instances.length} platform${group.instances.length===1?'':'s'}</div></div>
+      </div>
+      ${researchHtml}
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Platform</th><th>Status</th><th>Launched</th><th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th><th style="text-align:right">P&amp;L</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      ${availablePlatforms.length ? `
+        <div class="field" style="margin-top:16px"><label class="field-label">Test this offer on another platform</label>
+          <div style="display:flex;gap:8px">
+            <select class="inp" id="ofd-add-platform">${availablePlatforms.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
+            <button class="toolbar-btn primary xs" onclick="addOfferToPlatform('${esc(encodedName)}',document.getElementById('ofd-add-platform').value)">Add</button>
+          </div>
+        </div>` : ''}`,
+    footer: `<button class="toolbar-btn" onclick="closeModal()">Close</button>` });
+}
+function addOfferToPlatform(encodedName, pid){
+  if (!pid) return;
+  const name = decodeURIComponent(encodedName);
+  closeModal();
+  editOffer(pid, null);
+  setTimeout(()=>{ const el = document.getElementById('f-oname'); if (el) el.value = name; }, 30);
+}
 function editOffer(pid, oid){
   const p = P(pid);
   const o = oid ? p.offers.find(x=>x.id===oid)
     : { name:'', vertical:'', geo:'', status:'queued', launched:'', ended:'', spend:'', revenue:'', reason:'', researchSlug:'', notes:'' };
+  const catalog = o.name ? offerCatalogEntry(o.name) : null;
+  const inheritedSlug = (!o.researchSlug && catalog && catalog.researchSlug) ? catalog.researchSlug : '';
   openModal({ title: oid?'Edit offer':'Add offer', sub: p.name, icon:'icon-teal', wide:true,
     body:`<div class="grid-2">
-        ${fld('Offer name','f-oname',o.name,{ph:'e.g. Orivelle'})}
+        <div class="field"><label class="field-label">Offer name</label>
+          <input class="inp" id="f-oname" value="${esc(o.name)}" placeholder="e.g. Orivelle" oninput="onOfferNameInput(this.value)"></div>
         ${fld('Vertical','f-over',o.vertical,{ph:'Health, dating, insurance…'})}
         ${fld('Geo','f-ogeo',o.geo,{ph:'US, CA, UK…'})}
         ${fld('Status','f-ostat',o.status,{type:'select',options:Object.entries(OFFER_STATUS).map(([k,v])=>[k,v.label])})}
@@ -2773,21 +3032,29 @@ function editOffer(pid, oid){
         ${fld('Revenue','f-orev',o.revenue,{type:'number',ph:'0'})}
       </div>
       ${fld('Reason it was not tested','f-oreason',o.reason,{type:'textarea',style:'min-height:52px',ph:'Only needed for queued or not-tested offers',hint:'Be specific — "advertiser would not approve the geo" beats "no capacity".'})}
-      ${fld('Creative research slug','f-oslug',o.researchSlug,{ph:'obd-fuel',hint:`Links to ${esc(researchUrl('«slug»'))}`})}
+      <div class="field"><label class="field-label">Creative research slug</label>
+        <input class="inp" id="f-oslug" value="${esc(o.researchSlug||inheritedSlug)}" placeholder="obd-fuel">
+        <div class="hint" id="f-oslug-hint">${inheritedSlug
+          ? `Inherited from another platform testing the same offer name — resolves to ${esc(researchUrl(inheritedSlug))}. Change it here to update it everywhere this offer appears.`
+          : `Links to ${esc(researchUrl('«slug»'))}. Set once — it'll carry over to any other platform that tests an offer with this same name.`}</div></div>
       ${fld('Notes','f-onotes',o.notes,{type:'textarea',style:'min-height:52px',ph:'Angle, funnel, what the test proved…'})}`,
     footer: ftr(`saveOffer('${pid}',${oid?`'${oid}'`:'null'})`, oid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delOffer('${pid}','${oid}')">Delete</button>`:'') });
 }
 function saveOffer(pid, oid){
   const name = V('f-oname'); if(!name){ toast('Give the offer a name','error'); return; }
+  let researchSlug = V('f-oslug');
+  const existingCatalog = offerCatalogEntry(name);
+  if (!researchSlug && existingCatalog && existingCatalog.researchSlug) researchSlug = existingCatalog.researchSlug;
   const d = { name, vertical:V('f-over'), geo:V('f-ogeo'), status:V('f-ostat'), launched:V('f-olaunch'), ended:V('f-oend'),
     spend: parseFloat(V('f-ospend'))||0, revenue: parseFloat(V('f-orev'))||0,
-    reason:V('f-oreason'), researchSlug:V('f-oslug'), notes:V('f-onotes') };
+    reason:V('f-oreason'), researchSlug, notes:V('f-onotes') };
   if ((d.status==='not_tested'||d.status==='queued') && !d.reason) {
     toast('Add a reason — untested offers need one','error'); document.getElementById('f-oreason').focus(); return;
   }
   const p = P(pid);
   if (oid) Object.assign(p.offers.find(x=>x.id===oid), d);
   else p.offers.push(Object.assign({id:uid()}, d));
+  if (researchSlug) syncOfferResearchLink(name, researchSlug, researchSlug, false);
   save(); closeModal(); render(); toast(oid?'Offer updated':'Offer added','success');
 }
 function delOffer(pid, oid){
@@ -3095,6 +3362,7 @@ render();
 dot('saved', cloudConfigured() ? 'Connecting…' : 'Saved locally');
 (async () => {
   if (AUTH.accessToken && AUTH.expiresAt < Date.now() + 60000) await refreshAuthSession();
+  if (isSignedIn()) fetchEditors();
   initCloudSync();
 })();
 window.addEventListener('resize', ()=>{ if(window.innerWidth>1024) closeSidebar(); });
