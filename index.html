@@ -654,12 +654,14 @@ const STATUS = {
   dead:        { label:'Closed',       cls:'b-coral',  dot:'#ef4444', order:8 }
 };
 const ADVERTISER_STATUS = {
-  sequencing: { label:'Sequencing',      cls:'b-blue',   dot:'#3b82f6' },
-  email_sent: { label:'Email Sent',      cls:'b-purple', dot:'#8b5cf6' },
-  follow_up:  { label:'Follow Up',       cls:'b-amber',  dot:'#f59e0b' },
-  io_done:    { label:'IO Done',         cls:'b-teal',   dot:'#16a34a' },
-  won:        { label:'Won / Closed',    cls:'b-teal',   dot:'#059669' },
-  lost:       { label:'Lost / Archived', cls:'b-coral',  dot:'#ef4444' }
+  untouched:      { label:'Untouched',           cls:'b-grey',   dot:'#9ca3af' },
+  sequencing:     { label:'Sequencing',          cls:'b-blue',   dot:'#3b82f6' },
+  contact_made:   { label:'Contact Made',        cls:'b-purple', dot:'#8b5cf6' },
+  call_scheduled: { label:'Call Scheduled',      cls:'b-blue',   dot:'#0ea5e9' },
+  negotiating:    { label:'Negotiating',         cls:'b-amber',  dot:'#f59e0b' },
+  ae_handoff:     { label:'AE Handoff / IO Sent',cls:'b-purple', dot:'#7c3aed' },
+  io_signed:      { label:'IO Signed',           cls:'b-teal',   dot:'#059669' },
+  lost:           { label:'Lost / Archived',     cls:'b-coral',  dot:'#ef4444' }
 };
 const OFFER_STATUS = {
   queued:     { label:'To test',    cls:'b-amber'  },
@@ -954,6 +956,13 @@ function load(){
   }
   if (!S.offerCatalog || typeof S.offerCatalog !== 'object') S.offerCatalog = {};
   if (!Array.isArray(S.advertisers)) S.advertisers = [];
+  if (!S.advertiserStatusMigratedV2) {
+    const remap = { sequencing:'sequencing', email_sent:'contact_made', follow_up:'call_scheduled', io_done:'io_signed', won:'io_signed', lost:'lost' };
+    S.advertisers.forEach(a => { a.status = remap[a.status] || 'untouched'; });
+    S.advertiserStatusMigratedV2 = true;
+    S.updated = Date.now();
+    store.set(KEY, JSON.stringify(S));
+  }
   try { CONF = Object.assign(defaultConf(), JSON.parse(store.get(CFG)||'{}')); } catch(e){ CONF = defaultConf(); }
   // if this browser never manually connected/disconnected a Supabase project (both fields still
   // empty from an older default), pick up the shared team project automatically
@@ -2352,6 +2361,11 @@ function importJSON(input){
 function load2(){
   if (!S.offerCatalog || typeof S.offerCatalog !== 'object') S.offerCatalog = {};
   if (!Array.isArray(S.advertisers)) S.advertisers = [];
+  if (!S.advertiserStatusMigratedV2) {
+    const remap = { sequencing:'sequencing', email_sent:'contact_made', follow_up:'call_scheduled', io_done:'io_signed', won:'io_signed', lost:'lost' };
+    S.advertisers.forEach(a => { a.status = remap[a.status] || 'untouched'; });
+    S.advertiserStatusMigratedV2 = true;
+  }
   S.platforms.forEach(p=>{ const base = seedPlatform({});
     ['poc','strategy'].forEach(k=>p[k]=Object.assign({},base[k],p[k]||{}));
     ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
@@ -3205,7 +3219,7 @@ function toggleMeetingPlayer(videoUrl, audioUrl, transcriptUrl){
   }
 }
 function editAdvertiser(id){
-  const a = id ? S.advertisers.find(x=>x.id===id) : { name:'', status:'sequencing', contactName:'', contactEmail:'', linkedin:'', notes:'' };
+  const a = id ? S.advertisers.find(x=>x.id===id) : { name:'', status:'untouched', contactName:'', contactEmail:'', linkedin:'', notes:'' };
   openModal({ title: id?'Edit advertiser':'Add advertiser', sub:'New advertisers pipeline', icon:'icon-blue', wide:true,
     body:`${fld('Advertiser / offer name','f-adv-name',a.name,{ph:'e.g. Orivelle Health'})}
       ${fld('Status','f-adv-status',a.status,{type:'select',options:Object.entries(ADVERTISER_STATUS).map(([k,v])=>[k,v.label])})}
