@@ -2535,7 +2535,7 @@ async function cloudPush(silent){
     if (!res.ok) {
       const isPermissionError = res.status === 401 || res.status === 403;
       if (isPermissionError) {
-        const e = new Error(isSignedIn() ? 'Your account does not have write access.' : 'Sign in to save changes — you are viewing in read-only mode.');
+        const e = new Error(isSignedIn() ? "You don't have editing access — ask the owner to add you as an editor." : 'Sign in to save changes — you are viewing in read-only mode.');
         e.isAuthError = true; throw e;
       }
       throw new Error(await res.text());
@@ -2544,7 +2544,7 @@ async function cloudPush(silent){
     dot('saved','Cloud synced '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
     if(!silent) toast('Pushed to cloud','success');
   } catch(e){
-    sbState = 'error'; dot(e.isAuthError?'error':'error', e.isAuthError?'Read-only — sign in to save':'Cloud push failed');
+    sbState = 'error'; dot('error', e.isAuthError ? (isSignedIn()?'No editing access':'Read-only — sign in to save') : 'Cloud push failed');
     if(!silent) toast(e.isAuthError ? e.message : 'Push failed — check URL, key and table', 'error');
   }
   if (view==='settings') renderSettings();
@@ -2923,7 +2923,7 @@ function editPlatform(pid){
   });
 }
 function savePlatform(pid){
-  const name = V('f-name'); if(!name){ toast('Give the platform a name','error'); return; }
+  const name = V('f-name') || 'Untitled platform';
   const color = V('f-color');
   const data = { name, short:V('f-short')||name.slice(0,2), color, fg: isLight(color)?'#111827':'#ffffff',
     category:V('f-cat'), status:V('f-status'), logoUrl:V('f-logourl') };
@@ -3013,7 +3013,7 @@ function editStage(pid, sid){
     footer: ftr(`saveStage('${pid}','${sid}')`, `<button class="toolbar-btn danger spacer" onclick="closeModal();delStage('${pid}','${sid}')">Delete</button>`) });
 }
 function saveStage(pid, sid){
-  const l = V('f-stg'); if(!l){ toast('Name the stage','error'); return; }
+  const l = V('f-stg') || 'Untitled stage';
   if (sid) {
     const s = P(pid).stages.find(x=>x.id===sid);
     Object.assign(s, { label:l, hint:V('f-stghint') });
@@ -3146,7 +3146,7 @@ function editOffer(pid, oid){
     footer: ftr(`saveOffer('${pid}',${oid?`'${oid}'`:'null'})`, oid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delOffer('${pid}','${oid}')">Delete</button>`:'') });
 }
 function saveOffer(pid, oid){
-  const name = V('f-oname'); if(!name){ toast('Give the offer a name','error'); return; }
+  const name = V('f-oname') || 'Untitled offer';
   let researchSlug = V('f-oslug');
   let vertical = V('f-over');
   const existingCatalog = offerCatalogEntry(name);
@@ -3155,9 +3155,6 @@ function saveOffer(pid, oid){
   const d = { name, vertical, geo:V('f-ogeo'), status:V('f-ostat'), launched:V('f-olaunch'), ended:V('f-oend'),
     spend: parseFloat(V('f-ospend'))||0, revenue: parseFloat(V('f-orev'))||0,
     reason:V('f-oreason'), researchSlug, notes:V('f-onotes') };
-  if ((d.status==='not_tested'||d.status==='queued') && !d.reason) {
-    toast('Add a reason — untested offers need one','error'); document.getElementById('f-oreason').focus(); return;
-  }
   const p = P(pid);
   if (oid) Object.assign(p.offers.find(x=>x.id===oid), d);
   else p.offers.push(Object.assign({id:uid()}, d));
@@ -3183,7 +3180,7 @@ function editAction(pid, aid){
       aid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delAction('${pid}','${aid}')">Delete</button>`:'') });
 }
 function saveAction(pid, aid){
-  const text = V('f-atext'); if(!text){ toast('Describe the action','error'); return; }
+  const text = V('f-atext') || '(no description)';
   const target = (aid && pid) ? pid : (V('f-apid') || pid);
   const d = { text, owner:V('f-aowner'), due:V('f-adue') };
   const p = P(target);
@@ -3271,7 +3268,7 @@ function onAdvertiserNameInput(name){
   if (cat && cat.vertical) verticalField.value = cat.vertical;
 }
 function saveAdvertiser(id){
-  const name = V('f-adv-name'); if(!name){ toast('Give the advertiser a name','error'); return; }
+  const name = V('f-adv-name') || 'Untitled advertiser';
   let vertical = V('f-adv-vertical');
   const existingCatalog = offerCatalogEntry(name);
   if (!vertical && existingCatalog && existingCatalog.vertical) vertical = existingCatalog.vertical;
@@ -3330,7 +3327,7 @@ function editKpi(pid, kid){
     footer: ftr(`saveKpi('${pid}',${kid?`'${kid}'`:'null'})`) });
 }
 function saveKpi(pid, kid){
-  const m = V('f-kmet'); if(!m){ toast('Name the metric','error'); return; }
+  const m = V('f-kmet') || 'Untitled metric';
   const d = { metric:m, period:V('f-kper'), target:V('f-ktgt'), actual:V('f-kact'), lowerBetter:V('f-klow')==='1', note:V('f-knote') };
   if (kid) Object.assign(P(pid).kpis.find(x=>x.id===kid), d);
   else P(pid).kpis.push(Object.assign({id:uid()}, d));
@@ -3348,7 +3345,7 @@ function editResearch(pid, rid){
       rid?`<button class="toolbar-btn danger spacer" onclick="closeModal();delResearch('${pid}','${rid}')">Remove</button>`:'') });
 }
 function saveResearch(pid, rid){
-  const slug = V('f-rslug'); if(!slug){ toast('Add the slug','error'); return; }
+  const slug = V('f-rslug');
   const d = { label:V('f-rlabel')||slug, slug, auto:false };
   if (rid) Object.assign(P(pid).research.find(x=>x.id===rid), d);
   else P(pid).research.push(Object.assign({id:uid()}, d));
@@ -3381,7 +3378,7 @@ function editTrafficInsight(pid, id){
       id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delTrafficInsight('${pid}','${id}')">Delete</button>`:'') });
 }
 function saveTrafficInsight(pid, id){
-  const title = V('f-ti-title'); if(!title){ toast('Give it a title','error'); return; }
+  const title = V('f-ti-title') || 'Untitled';
   const d = { title, date:V('f-ti-date'), body:V('f-ti-body') };
   const p = P(pid);
   if (id) Object.assign(p.trafficInsights.find(x=>x.id===id), d);
@@ -3409,7 +3406,7 @@ function editCreativeInsight(pid, id){
       id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delCreativeInsight('${pid}','${id}')">Delete</button>`:'') });
 }
 function saveCreativeInsight(pid, id){
-  const title = V('f-ci-title'); if(!title){ toast('Give it a title','error'); return; }
+  const title = V('f-ci-title') || 'Untitled';
   const d = { title, date:V('f-ci-date'), body:V('f-ci-body') };
   const p = P(pid);
   if (id) Object.assign(p.creativeInsights.find(x=>x.id===id), d);
@@ -3434,7 +3431,7 @@ function addCreativeMedia(pid, insightId){
     footer: ftr(`saveCreativeMedia('${pid}','${insightId}')`) });
 }
 function saveCreativeMedia(pid, insightId){
-  const url = V('f-cm-url'); if(!url){ toast('Paste a media URL','error'); return; }
+  const url = V('f-cm-url');
   const ins = P(pid).creativeInsights.find(x=>x.id===insightId);
   if (!Array.isArray(ins.media)) ins.media = [];
   ins.media.push({ id:uid(), type:guessMediaType(url), url, caption:V('f-cm-caption') });
