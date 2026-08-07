@@ -510,9 +510,17 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
       Overview
     </button>
+    <button class="ds-nav-item" data-nav="topoffers" onclick="go('topoffers')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+      Top offers
+    </button>
     <button class="ds-nav-item" data-nav="offers" onclick="go('offers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>
-      Offers &amp; tests<span class="nav-count" id="nav-count-offers">0</span>
+      Test schedule<span class="nav-count" id="nav-count-offers">0</span>
+    </button>
+    <button class="ds-nav-item" data-nav="advertisers" onclick="go('advertisers')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
+      Pipeline<span class="nav-count" id="nav-count-advertisers">0</span>
     </button>
     <button class="ds-nav-item" data-nav="actions" onclick="go('actions')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
@@ -521,10 +529,6 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
     <button class="ds-nav-item" data-nav="meetings" onclick="go('meetings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>
       Meetings<span class="nav-count" id="nav-count-meetings">0</span>
-    </button>
-    <button class="ds-nav-item" data-nav="advertisers" onclick="go('advertisers')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
-      New advertisers<span class="nav-count" id="nav-count-advertisers">0</span>
     </button>
 
     <div class="ds-nav-section">Platforms</div>
@@ -539,7 +543,7 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
   </nav>
 
   <div class="ds-sidebar-footer">
-    <button class="ds-nav-item" onclick="go('settings')" data-nav="settings">
+    <button class="ds-nav-item" id="nav-settings-btn" onclick="go('settings')" data-nav="settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.68 1.09 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings &amp; data
     </button>
@@ -572,6 +576,7 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
     <div class="view active" id="view-dashboard"></div>
     <div class="view" id="view-platform"></div>
     <div class="view" id="view-offers"></div>
+    <div class="view" id="view-topoffers"></div>
     <div class="view" id="view-actions"></div>
     <div class="view" id="view-meetings"></div>
     <div class="view" id="view-advertisers"></div>
@@ -934,6 +939,15 @@ function loadAuth(){
 }
 function saveAuth(){ store.set(AUTHKEY, JSON.stringify(AUTH)); }
 function isSignedIn(){ return !!(AUTH.accessToken && AUTH.expiresAt > Date.now()); }
+// Whether Settings (and anything editor-only) should show. If there's no shared
+// backend configured at all, there's no "editor list" concept — don't restrict.
+// Otherwise, only show to someone signed in AND present in the fetched editors list.
+function isAuthorizedEditor(){
+  if (!cloudConfigured()) return true;
+  if (!isSignedIn()) return false;
+  if (_editorsLoadError) return true; // tpd_editors table not set up yet — let them through to finish setup
+  return _editorsList.some(e => e.user_id === AUTH.userId);
+}
 
 const SHARED_SUPABASE = {
   url:'https://vdannnwpikfipdamphlu.supabase.co',
@@ -1178,14 +1192,16 @@ function toast(msg, kind){
 /* ═══════════════ ROUTING ═══════════════ */
 const TITLES = {
   dashboard:['Traffic Platform Development','Strategy, POC relationships, tests and P&L across every traffic source'],
-  offers:   ['Offers & tests','Every offer we brought to a platform, and what it made or lost'],
+  offers:   ['Test schedule','Every offer we brought to a platform, and what it made or lost'],
+  topoffers: ['Top offers','Best performers on each platform, side by side'],
   actions:  ['Action items','What is open right now, and what is next per platform'],
   meetings: ['Meeting notes','Everything discussed with platform reps, by date'],
-  advertisers: ['New advertisers pipeline','Outreach and onboarding for advertisers not yet running'],
+  advertisers: ['Pipeline','Outreach and onboarding for advertisers not yet running'],
   report:   ['Weekly update','Generate a management-ready summary from live data'],
   settings: ['Settings & data','Identity, linked tools, cloud sync, backup']
 };
 function go(v, pid){
+  if (v==='settings' && !isAuthorizedEditor()) { v = 'dashboard'; toast("You don't have access to Settings",'error'); }
   view = v; if (pid) curPid = pid;
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
@@ -1240,6 +1256,7 @@ function render(){
   if (view==='dashboard') renderDashboard();
   if (view==='platform')  renderPlatform();
   if (view==='offers')    renderOffers();
+  if (view==='topoffers') renderTopOffersGlobal();
   if (view==='actions')   renderActions();
   if (view==='meetings')  renderMeetings();
   if (view==='advertisers') renderAdvertisers();
@@ -1260,9 +1277,11 @@ function renderNav(){
   document.getElementById('nav-count-offers').textContent = allOffers().length;
   document.getElementById('nav-count-actions').textContent = allActions().filter(a=>!a.done).length;
   document.getElementById('nav-count-meetings').textContent = allMeetings().length;
-  document.getElementById('nav-count-advertisers').textContent = S.advertisers.filter(a=>a.status!=='won'&&a.status!=='lost').length;
+  document.getElementById('nav-count-advertisers').textContent = S.advertisers.filter(a=>a.status!=='io_signed'&&a.status!=='lost').length;
   const rl = document.getElementById('nav-research-link');
   rl.href = researchUrl('') || '#';
+  const settingsBtn = document.getElementById('nav-settings-btn');
+  if (settingsBtn) settingsBtn.style.display = isAuthorizedEditor() ? '' : 'none';
   if (view==='platform'){
     const nav = document.querySelector(`.ds-nav-item[data-nav="pf-${curPid}"]`);
     if (nav) nav.classList.add('active');
@@ -1383,10 +1402,11 @@ function renderPlatform(){
 
   const tabs = [
     ['overview','Overview',''],
+    ['topoffers','Top offers',''],
     ['traffic','Traffic insights', p.trafficInsights.length||''],
     ['creative','Creative insights', p.creativeInsights.length||''],
     ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
-    ['offers','Offers & tests', p.offers.length||''],
+    ['offers','Test schedule', p.offers.length||''],
     ['actions','Action items', t.openActions||''],
     ['meetings','Meeting notes', p.meetings.length||''],
     ['kpis','KPIs', p.kpis.length||'']
@@ -1435,6 +1455,7 @@ function setTab(t){ curTab=t; renderPlatform(); }
 function renderTab(){
   const p = P(curPid), el = document.getElementById('tab-content');
   if (curTab==='overview') el.innerHTML = tabOverview(p);
+  if (curTab==='topoffers') el.innerHTML = tabTopOffers(p);
   if (curTab==='traffic')  el.innerHTML = tabTrafficInsights(p);
   if (curTab==='creative') el.innerHTML = tabCreativeInsights(p);
   if (curTab==='plan')     el.innerHTML = tabPlan(p);
@@ -1606,6 +1627,43 @@ function tabCreativeInsights(p){
   </div>`;
 }
 
+function tabTopOffers(p){
+  const ranked = p.offers.filter(o=>(Number(o.spend)||0)>0||(Number(o.revenue)||0)>0)
+    .slice().sort((a,b)=>offerPnl(b).profit-offerPnl(a).profit);
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+      <div><h2>Top offers</h2><div class="sh-sub">Ranked by net P&amp;L on ${esc(p.name)}</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editOffer('${p.id}')">+ Add offer</button></div>
+    </div>
+    ${ranked.length ? `<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>#</th><th>Offer</th><th>Status</th><th>Launched</th>
+        <th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th>
+        <th style="text-align:right">P&amp;L</th><th style="text-align:right">ROI</th></tr></thead>
+      <tbody>${ranked.map((o,i)=>{ const t = offerPnl(o); return `
+        <tr style="cursor:pointer" onclick="openOfferDetail('${esc(encodeURIComponent(o.name))}')">
+          <td style="color:var(--text-muted);font-weight:700">${i+1}</td>
+          <td><b>${esc(o.name)}</b></td>
+          <td>${offerBadge(o.status)}</td>
+          <td style="font-size:11.5px;color:var(--text-secondary)">${o.launched?niceDate(o.launched):'—'}</td>
+          <td class="num">${money(t.spend)}</td>
+          <td class="num">${money(t.rev)}</td>
+          <td class="num ${pnlClass(t.profit)}">${money(t.profit)}</td>
+          <td class="num ${pnlClass(t.profit)}">${t.spend>0?pct(t.roi):'—'}</td>
+        </tr>`; }).join('')}
+        <tr style="background:var(--bg-secondary);font-weight:700">
+          <td colspan="4" style="text-transform:uppercase;font-size:10px;letter-spacing:.06em;color:var(--text-muted)">Total · ${ranked.length} offer${ranked.length===1?'':'s'}</td>
+          <td class="num">${money(ranked.reduce((a,o)=>a+(Number(o.spend)||0),0))}</td>
+          <td class="num">${money(ranked.reduce((a,o)=>a+(Number(o.revenue)||0),0))}</td>
+          <td class="num ${pnlClass(ranked.reduce((a,o)=>a+offerPnl(o).profit,0))}">${money(ranked.reduce((a,o)=>a+offerPnl(o).profit,0))}</td>
+          <td class="num ${pnlClass(ranked.reduce((a,o)=>a+offerPnl(o).profit,0))}">${(()=>{ const sp=ranked.reduce((a,o)=>a+(Number(o.spend)||0),0); const pf=ranked.reduce((a,o)=>a+offerPnl(o).profit,0); return sp>0?pct((pf/sp)*100):'—'; })()}</td>
+        </tr></tbody>
+    </table></div>`
+    : `<div class="empty"><div class="empty-title">No offers with spend or revenue yet</div>
+      <div class="empty-sub">Once an offer on ${esc(p.name)} has spend or revenue logged, it'll show here ranked against the others.</div>
+      <button class="toolbar-btn primary" onclick="editOffer('${p.id}')">Add an offer</button></div>`}
+  </div>`;
+}
 function tabPlan(p){
   const t = platformTotals(p);
   return `<div class="section">
@@ -1685,7 +1743,7 @@ function tabOffers(p){
   return `<div class="section">
     <div class="section-header">
       <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></div>
-      <div><h2>Offers &amp; tests</h2><div class="sh-sub">What we brought to ${esc(p.name)} and what it returned</div></div>
+      <div><h2>Test schedule</h2><div class="sh-sub">What we brought to ${esc(p.name)} and what it returned</div></div>
       <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editOffer('${p.id}')">+ Add offer</button></div>
     </div>
     ${p.offers.length?`<div class="tbl-wrap"><table class="tbl">
@@ -1900,6 +1958,48 @@ function filteredOffers(){
   if (oF.status)   list = list.filter(o=>o.status===oF.status);
   if (oF.vertical) list = list.filter(o=>o.vertical===oF.vertical);
   return list.sort((a,b)=>(b.launched||'').localeCompare(a.launched||''));
+}
+
+/* ───────────── TOP OFFERS (global, distributed by platform) ───────────── */
+function renderTopOffersGlobal(){
+  const withData = S.platforms.map(p => {
+    const ranked = p.offers.filter(o=>(Number(o.spend)||0)>0||(Number(o.revenue)||0)>0)
+      .slice().sort((a,b)=>offerPnl(b).profit-offerPnl(a).profit);
+    return { p, ranked };
+  }).filter(x => x.ranked.length);
+
+  document.getElementById('view-topoffers').innerHTML = withData.length ? withData.map(({p,ranked})=>{
+    const top5 = ranked.slice(0,5);
+    return `<div class="section">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+          ${logoChip(p,28)}
+          <div style="min-width:0"><h2 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</h2>
+            <div class="sh-sub">${ranked.length} offer${ranked.length===1?'':'s'} with spend or revenue</div></div>
+        </div>
+        <div class="sh-actions"><button class="toolbar-btn xs" onclick="openPlatform('${p.id}','topoffers')">Open platform →</button></div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>#</th><th>Offer</th><th>Status</th>
+          <th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th>
+          <th style="text-align:right">P&amp;L</th><th style="text-align:right">ROI</th></tr></thead>
+        <tbody>${top5.map((o,i)=>{ const t = offerPnl(o); return `
+          <tr style="cursor:pointer" onclick="openOfferDetail('${esc(encodeURIComponent(o.name))}')">
+            <td style="color:var(--text-muted);font-weight:700">${i+1}</td>
+            <td><b>${esc(o.name)}</b></td>
+            <td>${offerBadge(o.status)}</td>
+            <td class="num">${money(t.spend)}</td>
+            <td class="num">${money(t.rev)}</td>
+            <td class="num ${pnlClass(t.profit)}">${money(t.profit)}</td>
+            <td class="num ${pnlClass(t.profit)}">${t.spend>0?pct(t.roi):'—'}</td>
+          </tr>`; }).join('')}</tbody>
+      </table></div>
+      ${ranked.length>5?`<div style="padding:8px 20px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-light)">+ ${ranked.length-5} more on this platform — <a class="link" href="#" onclick="openPlatform('${p.id}','topoffers');return false">see all</a></div>`:''}
+    </div>`;
+  }).join('') : `<div class="section"><div class="empty">
+      <div class="empty-title">No offers with spend or revenue yet</div>
+      <div class="empty-sub">Once any platform has an offer with spend or revenue logged, it'll show here, ranked, one section per platform.</div>
+    </div></div>`;
 }
 function renderOffersTable(){
   const list = filteredOffers(), all = allOffers();
@@ -2419,7 +2519,7 @@ let _editorsList = [];
 let _editorsLoadError = null;
 
 async function fetchEditors(){
-  if (!isSignedIn()) { _editorsList = []; return; }
+  if (!isSignedIn()) { _editorsList = []; renderNav(); return; }
   try {
     const res = await fetch(`${sbBase()}/rest/v1/tpd_editors?select=user_id,email,added_at&order=added_at.asc`,
       { headers: sbHeaders() });
@@ -2430,6 +2530,7 @@ async function fetchEditors(){
     _editorsList = [];
     _editorsLoadError = 'Could not load the editor list — the tpd_editors table may not exist yet. See setup below.';
   }
+  renderNav();
   if (view==='settings') renderSettings();
 }
 async function addEditor(){
@@ -3243,7 +3344,7 @@ function editAdvertiser(id){
   const cat = a.name ? offerCatalogEntry(a.name) : null;
   const inheritedVertical = (!a.vertical && cat && cat.vertical) ? cat.vertical : '';
   const matchingOffer = a.name ? offersByName().find(g => g.key === normOfferName(a.name)) : null;
-  openModal({ title: id?'Edit advertiser':'Add advertiser', sub:'New advertisers pipeline', icon:'icon-blue', wide:true,
+  openModal({ title: id?'Edit advertiser':'Add advertiser', sub:'Pipeline', icon:'icon-blue', wide:true,
     body:`<div class="field"><label class="field-label">Advertiser / offer name</label>
         <input class="inp" id="f-adv-name" value="${esc(a.name)}" placeholder="e.g. Orivelle Health" oninput="onAdvertiserNameInput(this.value)"></div>
       <div class="grid-2">
