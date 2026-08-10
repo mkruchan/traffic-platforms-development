@@ -512,11 +512,11 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
     </button>
     <button class="ds-nav-item" data-nav="offers" onclick="go('offers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18"/><path d="m9 15.5 1.8 1.8L15 13.5"/></svg>
-      Offer Performance<span class="nav-count" id="nav-count-offers">0</span>
+      Offers Tests & Performance<span class="nav-count" id="nav-count-offers">0</span>
     </button>
     <button class="ds-nav-item" data-nav="advertisers" onclick="go('advertisers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
-      Pipeline<span class="nav-count" id="nav-count-advertisers">0</span>
+      New Offers Pipeline<span class="nav-count" id="nav-count-advertisers">0</span>
     </button>
     <button class="ds-nav-item" data-nav="actions" onclick="go('actions')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
@@ -1187,10 +1187,10 @@ function toast(msg, kind){
 /* ═══════════════ ROUTING ═══════════════ */
 const TITLES = {
   dashboard:['Traffic Platform Development','Strategy, POC relationships, tests and P&L across every traffic source'],
-  offers:   ['Offer Performance','Every offer we brought to a platform, and what it made or lost'],
+  offers:   ['Offers Tests & Performance','Every offer we brought to a platform, and what it made or lost'],
   actions:  ['Action items','What is open right now, and what is next per platform'],
   meetings: ['Meeting notes','Everything discussed with platform reps, by date'],
-  advertisers: ['Pipeline','Outreach and onboarding for advertisers not yet running'],
+  advertisers: ['New Offers Pipeline','Outreach and onboarding for advertisers not yet running'],
   report:   ['Weekly update','Generate a management-ready summary from live data'],
   settings: ['Settings & data','Identity, linked tools, cloud sync, backup']
 };
@@ -1399,7 +1399,7 @@ function renderPlatform(){
     ['traffic','Traffic insights', p.trafficInsights.length||''],
     ['creative','Creative insights', p.creativeInsights.length||''],
     ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
-    ['offers','Offer Performance', p.offers.length||''],
+    ['offers','Offers Tests & Performance', p.offers.length||''],
     ['actions','Action items', t.openActions||''],
     ['meetings','Meeting notes', p.meetings.length||''],
     ['kpis','KPIs', p.kpis.length||'']
@@ -1737,7 +1737,7 @@ function tabOffers(p){
   return `<div class="section">
     <div class="section-header">
       <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></div>
-      <div><h2>Offer Performance</h2><div class="sh-sub">What we brought to ${esc(p.name)} and what it returned</div></div>
+      <div><h2>Offers Tests & Performance</h2><div class="sh-sub">What we brought to ${esc(p.name)} and what it returned</div></div>
       <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editOffer('${p.id}')">+ Add offer</button></div>
     </div>
     ${p.offers.length?`<div class="tbl-wrap"><table class="tbl">
@@ -3297,7 +3297,7 @@ function editAdvertiser(id){
   const cat = a.name ? offerCatalogEntry(a.name) : null;
   const inheritedVertical = (!a.vertical && cat && cat.vertical) ? cat.vertical : '';
   const matchingOffer = a.name ? offersByName().find(g => g.key === normOfferName(a.name)) : null;
-  openModal({ title: id?'Edit advertiser':'Add advertiser', sub:'Pipeline', icon:'icon-blue', wide:true,
+  openModal({ title: id?'Edit advertiser':'Add advertiser', sub:'New Offers Pipeline', icon:'icon-blue', wide:true,
     body:`<div class="field"><label class="field-label">Advertiser / offer name</label>
         <input class="inp" id="f-adv-name" value="${esc(a.name)}" placeholder="e.g. Orivelle Health" oninput="onAdvertiserNameInput(this.value)"></div>
       <div class="grid-2">
