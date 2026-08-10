@@ -512,7 +512,7 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
     </button>
     <button class="ds-nav-item" data-nav="offers" onclick="go('offers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18"/><path d="m9 15.5 1.8 1.8L15 13.5"/></svg>
-      Test schedule<span class="nav-count" id="nav-count-offers">0</span>
+      Offer Performance<span class="nav-count" id="nav-count-offers">0</span>
     </button>
     <button class="ds-nav-item" data-nav="advertisers" onclick="go('advertisers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
@@ -1187,7 +1187,7 @@ function toast(msg, kind){
 /* ═══════════════ ROUTING ═══════════════ */
 const TITLES = {
   dashboard:['Traffic Platform Development','Strategy, POC relationships, tests and P&L across every traffic source'],
-  offers:   ['Test schedule','Every offer we brought to a platform, and what it made or lost'],
+  offers:   ['Offer Performance','Every offer we brought to a platform, and what it made or lost'],
   actions:  ['Action items','What is open right now, and what is next per platform'],
   meetings: ['Meeting notes','Everything discussed with platform reps, by date'],
   advertisers: ['Pipeline','Outreach and onboarding for advertisers not yet running'],
@@ -1399,7 +1399,7 @@ function renderPlatform(){
     ['traffic','Traffic insights', p.trafficInsights.length||''],
     ['creative','Creative insights', p.creativeInsights.length||''],
     ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
-    ['offers','Test schedule', p.offers.length||''],
+    ['offers','Offer Performance', p.offers.length||''],
     ['actions','Action items', t.openActions||''],
     ['meetings','Meeting notes', p.meetings.length||''],
     ['kpis','KPIs', p.kpis.length||'']
@@ -1737,7 +1737,7 @@ function tabOffers(p){
   return `<div class="section">
     <div class="section-header">
       <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></div>
-      <div><h2>Test schedule</h2><div class="sh-sub">What we brought to ${esc(p.name)} and what it returned</div></div>
+      <div><h2>Offer Performance</h2><div class="sh-sub">What we brought to ${esc(p.name)} and what it returned</div></div>
       <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editOffer('${p.id}')">+ Add offer</button></div>
     </div>
     ${p.offers.length?`<div class="tbl-wrap"><table class="tbl">
@@ -2498,7 +2498,7 @@ async function addEditor(){
     if (!res.ok) throw new Error(await res.text());
     closeModal(); toast('Editor added','success');
     await fetchEditors();
-  } catch(e){ toast('Could not add editor — check the UID and that setup below has been run','error'); }
+  } catch(e){ toast('Could not add editor: '+e.message,'error'); }
 }
 async function removeEditor(uid, label){
   confirmModal('Remove editor access?', `“${esc(label||uid)}” will no longer be able to save changes.`, 'Remove', async ()=>{
@@ -2508,7 +2508,7 @@ async function removeEditor(uid, label){
       });
       if (!res.ok) throw new Error(await res.text());
       toast('Editor removed'); await fetchEditors();
-    } catch(e){ toast('Could not remove editor','error'); }
+    } catch(e){ toast('Could not remove editor: '+e.message,'error'); }
   }, true);
 }
 function openAddEditor(){
@@ -2599,7 +2599,7 @@ async function cloudPush(silent){
     if(!silent) toast('Pushed to cloud','success');
   } catch(e){
     sbState = 'error'; dot('error', e.isAuthError ? (isSignedIn()?'No editing access':'Read-only — sign in to save') : 'Cloud push failed');
-    if(!silent) toast(e.isAuthError ? e.message : 'Push failed — check URL, key and table', 'error');
+    if(!silent) toast(e.isAuthError ? e.message : ('Push failed: '+e.message), 'error');
   }
   if (view==='settings') renderSettings();
 }
@@ -2627,7 +2627,7 @@ async function cloudPull(silent){
     return true;
   } catch(e){
     sbState = 'error'; dot('error','Cloud pull failed');
-    if(!silent) toast('Pull failed — check URL, key and table','error');
+    if(!silent) toast('Pull failed: '+e.message,'error');
     if (view==='settings') renderSettings();
     return false;
   }
@@ -2764,7 +2764,7 @@ async function syncCreativeResearch(silent){
       : 'Already up to date', 'success');
     if (view==='settings') renderSettings();
   } catch(e){
-    if (!silent) toast('Sync failed — check the shared connection','error');
+    if (!silent) toast('Sync failed: '+e.message,'error');
   }
 }
 
