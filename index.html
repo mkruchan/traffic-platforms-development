@@ -791,7 +791,7 @@ function seedPlatform(o){
                payment:'', tracking:'', formats:'', constraints:'', spyNotes:'' },
     stages: STAGE_TEMPLATE.map((s,i)=>({ id:uid(), label:s[0], hint:s[1], note:'', done:false })),
     kpis: [], actions: [], meetings: [], offers: [], research: [],
-    trafficInsights: [], creativeInsights: [], notes:''
+    trafficInsights: [], creativeInsights: [], importantNotes: [], notes:''
   }, o);
 }
 
@@ -982,7 +982,7 @@ function load(){
   S.platforms.forEach(p => {
     const base = seedPlatform({});
     ['poc','strategy'].forEach(k => p[k] = Object.assign({}, base[k], p[k]||{}));
-    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights'].forEach(k => { if(!Array.isArray(p[k])) p[k]=[]; });
+    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights','importantNotes'].forEach(k => { if(!Array.isArray(p[k])) p[k]=[]; });
     if (!p.stages.length) p.stages = base.stages;
     if (!p.fg) p.fg = '#ffffff';
     if (p.logoKey===undefined) p.logoKey = '';
@@ -1096,8 +1096,13 @@ function normOfferName(name){ return String(name||'').trim().toLowerCase(); }
 function offerCatalogEntry(name){
   const key = normOfferName(name);
   if (!key) return null;
-  if (!S.offerCatalog[key]) S.offerCatalog[key] = { displayName: name, researchSlug:'', researchLabel:'', autoLinked:false, description:'', vertical:'' };
-  return S.offerCatalog[key];
+  if (!S.offerCatalog[key]) S.offerCatalog[key] = { displayName: name, researchSlug:'', researchLabel:'', autoLinked:false, description:'', vertical:'', funnels:[], headlines:[], creatives:[] };
+  // migrate older entries that predate these fields
+  const e = S.offerCatalog[key];
+  if (!Array.isArray(e.funnels)) e.funnels = [];
+  if (!Array.isArray(e.headlines)) e.headlines = [];
+  if (!Array.isArray(e.creatives)) e.creatives = [];
+  return e;
 }
 function offersByName(){
   const groups = {};
@@ -1189,7 +1194,7 @@ const TITLES = {
   dashboard:['Traffic Platform Development','Strategy, POC relationships, tests and P&L across every traffic source'],
   offers:   ['Offer Tests','Every offer we brought to a platform, and what it made or lost'],
   actions:  ['Action items','What is open right now, and what is next per platform'],
-  meetings: ['Meeting notes','Everything discussed with platform reps, by date'],
+  meetings: ['Meetings','Everything discussed with platform reps, by date'],
   advertisers: ['New Offers Pipeline','Outreach and onboarding for advertisers not yet running'],
   report:   ['Weekly update','Generate a management-ready summary from live data'],
   settings: ['Settings & data','Identity, linked tools, cloud sync, backup']
@@ -1396,13 +1401,13 @@ function renderPlatform(){
   const tabs = [
     ['overview','Overview',''],
     ['topoffers','Top offers',''],
-    ['traffic','Traffic insights', p.trafficInsights.length||''],
+    ['kpis','KPIs', p.kpis.length||''],
     ['creative','Creative insights', p.creativeInsights.length||''],
-    ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
+    ['important','Important notes', p.importantNotes.length||''],
     ['offers','Offer Tests', p.offers.length||''],
+    ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
     ['actions','Action items', t.openActions||''],
-    ['meetings','Meeting notes', p.meetings.length||''],
-    ['kpis','KPIs', p.kpis.length||'']
+    ['meetings','Meetings', p.meetings.length||'']
   ];
 
   document.getElementById('view-platform').innerHTML = `
@@ -1456,6 +1461,7 @@ function renderTab(){
   if (curTab==='actions')  el.innerHTML = tabActions(p);
   if (curTab==='meetings') el.innerHTML = tabMeetings(p);
   if (curTab==='kpis')     el.innerHTML = tabKpis(p);
+  if (curTab==='important') el.innerHTML = tabImportantNotes(p);
 }
 
 function kvRow(k,v,mono){
@@ -1623,37 +1629,26 @@ function tabCreativeInsights(p){
 function tabTopOffers(p){
   const ranked = p.offers.filter(o=>(Number(o.spend)||0)>0||(Number(o.revenue)||0)>0)
     .slice().sort((a,b)=>offerPnl(b).profit-offerPnl(a).profit);
+  const rowsFor = list => list.map((o,i)=>{
+    const adv = S.advertisers.find(a=>normOfferName(a.name)===normOfferName(o.name));
+    return `<tr style="cursor:pointer" onclick="openOfferDetail('${esc(encodeURIComponent(o.name))}')">
+      <td style="color:var(--text-muted);font-weight:700;width:30px">${i+1}</td>
+      <td><b>${esc(o.name)}</b></td>
+      <td style="color:var(--text-secondary)">${adv?esc(adv.contactName||adv.name):'—'}</td>
+    </tr>`;
+  }).join('');
   return `<div class="section">
     <div class="section-header">
       <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
-      <div><h2>Top offers</h2><div class="sh-sub">Ranked by net P&amp;L on ${esc(p.name)}</div></div>
+      <div><h2>Top offers</h2><div class="sh-sub">Offer and advertiser names — spend, revenue, and status live in Offer Tests</div></div>
       <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editOffer('${p.id}')">+ Add offer</button></div>
     </div>
     ${ranked.length ? `<div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>#</th><th>Offer</th><th>Status</th><th>Launched</th>
-        <th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th>
-        <th style="text-align:right">P&amp;L</th><th style="text-align:right">ROI</th></tr></thead>
-      <tbody>${ranked.map((o,i)=>{ const t = offerPnl(o); return `
-        <tr style="cursor:pointer" onclick="openOfferDetail('${esc(encodeURIComponent(o.name))}')">
-          <td style="color:var(--text-muted);font-weight:700">${i+1}</td>
-          <td><b>${esc(o.name)}</b></td>
-          <td>${offerBadge(o.status)}</td>
-          <td style="font-size:11.5px;color:var(--text-secondary)">${o.launched?niceDate(o.launched):'—'}</td>
-          <td class="num">${money(t.spend)}</td>
-          <td class="num">${money(t.rev)}</td>
-          <td class="num ${pnlClass(t.profit)}">${money(t.profit)}</td>
-          <td class="num ${pnlClass(t.profit)}">${t.spend>0?pct(t.roi):'—'}</td>
-        </tr>`; }).join('')}
-        <tr style="background:var(--bg-secondary);font-weight:700">
-          <td colspan="4" style="text-transform:uppercase;font-size:10px;letter-spacing:.06em;color:var(--text-muted)">Total · ${ranked.length} offer${ranked.length===1?'':'s'}</td>
-          <td class="num">${money(ranked.reduce((a,o)=>a+(Number(o.spend)||0),0))}</td>
-          <td class="num">${money(ranked.reduce((a,o)=>a+(Number(o.revenue)||0),0))}</td>
-          <td class="num ${pnlClass(ranked.reduce((a,o)=>a+offerPnl(o).profit,0))}">${money(ranked.reduce((a,o)=>a+offerPnl(o).profit,0))}</td>
-          <td class="num ${pnlClass(ranked.reduce((a,o)=>a+offerPnl(o).profit,0))}">${(()=>{ const sp=ranked.reduce((a,o)=>a+(Number(o.spend)||0),0); const pf=ranked.reduce((a,o)=>a+offerPnl(o).profit,0); return sp>0?pct((pf/sp)*100):'—'; })()}</td>
-        </tr></tbody>
+      <thead><tr><th>#</th><th>Offer</th><th>Advertiser</th></tr></thead>
+      <tbody>${rowsFor(ranked)}</tbody>
     </table></div>`
     : `<div class="empty"><div class="empty-title">No offers with spend or revenue yet</div>
-      <div class="empty-sub">Once an offer on ${esc(p.name)} has spend or revenue logged, it'll show here ranked against the others.</div>
+      <div class="empty-sub">Once an offer on ${esc(p.name)} has spend or revenue logged, it'll show here.</div>
       <button class="toolbar-btn primary" onclick="editOffer('${p.id}')">Add an offer</button></div>`}
   </div>`;
 }
@@ -1818,7 +1813,7 @@ function tabMeetings(p){
   return `<div class="section">
     <div class="section-header">
       <div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-      <div><h2>Meeting notes</h2><div class="sh-sub">${p.poc.cadence?esc(p.poc.cadence)+' call':'No cadence set'}${p.poc.name?' with '+esc(p.poc.name):''}</div></div>
+      <div><h2>Meetings</h2><div class="sh-sub">${p.poc.cadence?esc(p.poc.cadence)+' call':'No cadence set'}${p.poc.name?' with '+esc(p.poc.name):''}</div></div>
       <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editMeeting('${p.id}')">+ Log meeting</button></div>
     </div>
     <div class="section-body flush">${ms.length?ms.map(m=>meetingCard(m,false)).join('')
@@ -1836,7 +1831,7 @@ function tabKpis(p){
       <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editKpi('${p.id}')">+ Add KPI</button></div>
     </div>
     ${p.kpis.length?`<div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th style="width:24px"></th><th>Metric</th><th>Period</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th style="width:24px"></th><th>Metric</th><th>Offer</th><th>Period</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th>Status</th><th></th></tr></thead>
       <tbody>${p.kpis.map(k=>{
         const tg=parseFloat(k.target), ac=parseFloat(k.actual);
         let badge='<span class="badge b-grey">No data</span>';
@@ -1845,6 +1840,7 @@ function tabKpis(p){
         return `<tr ${dragAttrs(p.id,'kpis',k.id)}>
           <td style="cursor:grab"><span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span></td>
           <td><b>${esc(k.metric)}</b>${k.note?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(k.note)}</div>`:''}</td>
+          <td>${k.offerName?`<span class="link" style="cursor:pointer;font-size:12px" onclick="openOfferDetail('${esc(encodeURIComponent(k.offerName))}')">${esc(k.offerName)}</span>`:'<span style="color:var(--text-muted);font-size:12px">General</span>'}</td>
           <td>${esc(k.period||'—')}</td><td class="num">${esc(k.target||'—')}</td><td class="num">${esc(k.actual||'—')}</td>
           <td>${badge}</td>
           <td style="width:70px"><div class="row-actions">
@@ -1854,6 +1850,29 @@ function tabKpis(p){
     :`<div class="empty"><div class="empty-title">No KPIs set</div>
       <div class="empty-sub">Typical starters: monthly spend, blended ROI, CPL, approved offers, time to first test.</div>
       <button class="toolbar-btn primary" onclick="editKpi('${p.id}')">Add a KPI</button></div>`}
+  </div>`;
+}
+function tabImportantNotes(p){
+  return `<div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-coral"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg></div>
+      <div><h2>Important notes</h2><div class="sh-sub">Anything worth flagging so it doesn't get lost</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editImportantNote('${p.id}')">+ Add note</button></div>
+    </div>
+    <div class="section-body flush">${p.importantNotes.length ? p.importantNotes.map(n=>`
+      <div class="ai-row" ${dragAttrs(p.id,'importantNotes',n.id)}>
+        <span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span>
+        <div class="ai-text" style="cursor:pointer;white-space:pre-wrap" onclick="editImportantNote('${p.id}','${n.id}')">${esc(n.text)}</div>
+        <div class="row-actions">
+          <button class="icon-btn" onclick="editImportantNote('${p.id}','${n.id}')" title="Edit">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+          <button class="icon-btn danger" onclick="delImportantNote('${p.id}','${n.id}')" title="Delete">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+        </div>
+      </div>`).join('')
+      : `<div class="empty"><div class="empty-title">No important notes yet</div>
+        <div class="empty-sub">A running list for anything that matters — policy quirks, a rep's promise, a landmine to avoid next time.</div>
+        <button class="toolbar-btn primary" onclick="editImportantNote('${p.id}')">Add the first note</button></div>`}</div>
   </div>`;
 }
 </script>
@@ -2363,6 +2382,27 @@ create policy "delete_owner" on tpd_state for delete
       </div>
 
       <div class="section">
+        <div class="section-header"><div class="section-icon icon-coral"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <div><h2>Media storage</h2><div class="sh-sub">One-time setup for offer creative uploads (images/video)</div></div></div>
+        <div class="section-body">
+          <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:14px">
+            Uploading an image or video to an offer's Creatives gallery sends the actual file to a Supabase Storage bucket — not the shared database — so syncing stays fast. The bucket needs to exist once before uploads will work.
+          </div>
+          <div class="field-label" style="margin-bottom:8px">One-time setup (Supabase dashboard)</div>
+          <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.7">
+            <b>1.</b> <b>Storage → New bucket</b> → name it exactly <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:4px">tpd-media</code> → mark it <b>Public</b>.<br>
+            <b>2.</b> That's it for reading. For uploads to work through this app, add this policy in the <b>SQL Editor</b> (only editors can upload, same rule as everything else here):
+          </div>
+          <div class="report-out" style="max-height:none;font-size:11px;margin-top:8px">create policy "editors_upload_media" on storage.objects for insert
+  with check (bucket_id = 'tpd-media' and auth.uid() in (select user_id from tpd_editors));
+
+create policy "anyone_reads_media" on storage.objects for select
+  using (bucket_id = 'tpd-media');</div>
+          <div class="hint" style="margin-top:8px">If uploads fail before this is set up, the error message will say exactly why — bucket missing or a permission error — rather than failing silently.</div>
+        </div>
+      </div>
+
+      <div class="section">
         <div class="section-header"><div class="section-icon icon-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></div>
           <div><h2>Export &amp; backup</h2></div></div>
         <div class="section-body">
@@ -2436,7 +2476,7 @@ function load2(){
   }
   S.platforms.forEach(p=>{ const base = seedPlatform({});
     ['poc','strategy'].forEach(k=>p[k]=Object.assign({},base[k],p[k]||{}));
-    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
+    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights','importantNotes'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
   if (!S.brandingMigratedV2) {
     S.platforms.forEach(p=>{ const b = BRAND_DEFAULTS[p.name]; if (b) Object.assign(p, b); });
     S.brandingMigratedV2 = true;
@@ -2457,6 +2497,24 @@ function resetAll(){
   }, true);
 }
 function sbBase(){ return CONF.sb.url.replace(/\/+$/,''); }
+/* ═══════════════ MEDIA UPLOAD (Supabase Storage) ═══════════════
+   Real file upload — the actual bytes go to a Storage bucket, not the
+   shared JSON state. Only the resulting public URL gets saved, same as
+   any other creative-research link, so syncing stays fast and cheap. */
+const MEDIA_BUCKET = 'tpd-media';
+async function uploadToStorage(file){
+  if (!cloudConfigured()) throw new Error('Connect Supabase first');
+  const ext = (file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const path = `offers/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const bytes = await file.arrayBuffer();
+  const res = await fetch(`${sbBase()}/storage/v1/object/${MEDIA_BUCKET}/${path}`, {
+    method:'POST',
+    headers: sbHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
+    body: bytes
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return `${sbBase()}/storage/v1/object/public/${MEDIA_BUCKET}/${path}`;
+}
 function sbHeaders(extra){
   const bearer = isSignedIn() ? AUTH.accessToken : CONF.sb.key;
   return Object.assign({ 'apikey':CONF.sb.key, 'Authorization':'Bearer '+bearer }, extra||{});
@@ -2958,7 +3016,7 @@ function confirmModal(title, msg, cta, fn, danger){
 
 /* ═══════════════ PLATFORM ═══════════════ */
 function editPlatform(pid){
-  const p = pid ? P(pid) : { name:'', short:'', color:'#2563eb', fg:'#ffffff', category:'', accessModel:'', status:'prospecting', priority:'p2', logoUrl:'', logoKey:'' };
+  const p = pid ? P(pid) : { name:'', short:'', color:'#2563eb', fg:'#ffffff', category:'', accessModel:'', status:'prospecting', priority:'p2', logoUrl:'', logoKey:'', notes:'' };
   const hasBrandIcon = p.logoKey && BRAND_ICONS[p.logoKey];
   openModal({
     title: pid?'Edit platform':'Add platform', sub: pid?p.name:'A new traffic source to develop',
@@ -2972,7 +3030,8 @@ function editPlatform(pid){
       ${fld('Custom logo image URL','f-logourl',p.logoUrl,{ph:'https://…/logo.png',
         hint: hasBrandIcon
           ? `Leave blank to keep the official ${esc(p.name)} mark. Paste a direct image link to override it.`
-          : `No verified official mark on file for this platform — showing a letter chip. Paste a direct link to its logo (png/svg) to show the real thing instead.`})}`,
+          : `No verified official mark on file for this platform — showing a letter chip. Paste a direct link to its logo (png/svg) to show the real thing instead.`})}
+      ${fld('Notes','f-pnotes',p.notes,{type:'textarea',style:'min-height:80px',ph:'Anything worth remembering about this platform…',hint:'Same notes shown on the Overview tab — edit from either place.'})}`,
     footer: ftr(`savePlatform(${pid?`'${pid}'`:'null'})`, pid?`<button class="toolbar-btn danger spacer" onclick="delPlatform('${pid}')">Delete platform</button>`:'')
   });
 }
@@ -2980,7 +3039,7 @@ function savePlatform(pid){
   const name = V('f-name') || 'Untitled platform';
   const color = V('f-color');
   const data = { name, short:V('f-short')||name.slice(0,2), color, fg: isLight(color)?'#111827':'#ffffff',
-    category:V('f-cat'), status:V('f-status'), logoUrl:V('f-logourl') };
+    category:V('f-cat'), status:V('f-status'), logoUrl:V('f-logourl'), notes:V('f-pnotes') };
   if (pid) Object.assign(P(pid), data);
   else { const np = seedPlatform(data); S.platforms.push(np); curPid = np.id; }
   save(); closeModal(); render(); toast(pid?'Platform updated':'Platform added','success');
@@ -3140,6 +3199,75 @@ function openOfferDetail(encodedName){
       </div></div>
   ` : `<div class="hint" style="margin-bottom:14px">No research board linked yet — add a research slug from any "Edit offer" form and it'll show here and on every platform testing this offer.</div>`;
 
+  const linkedKpis = [];
+  S.platforms.forEach(p => p.kpis.forEach(k => {
+    if (normOfferName(k.offerName) === key) linkedKpis.push({...k, pid:p.id, pname:p.name});
+  }));
+  const kpisHtml = linkedKpis.length ? `
+    <div class="field"><label class="field-label">KPIs for this offer</label>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Platform</th><th>Metric</th><th>Period</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th>Status</th></tr></thead>
+        <tbody>${linkedKpis.map(k=>{
+          const tg=parseFloat(k.target), ac=parseFloat(k.actual);
+          let badge='<span class="badge b-grey">No data</span>';
+          if(!isNaN(tg)&&!isNaN(ac)){ const hit = k.lowerBetter ? ac<=tg : ac>=tg;
+            badge = hit?'<span class="badge b-teal">On target</span>':'<span class="badge b-coral">Behind</span>'; }
+          return `<tr>
+            <td style="font-size:12px">${esc(k.pname)}</td>
+            <td><b>${esc(k.metric)}</b></td>
+            <td>${esc(k.period||'—')}</td>
+            <td class="num">${esc(k.target||'—')}</td>
+            <td class="num">${esc(k.actual||'—')}</td>
+            <td>${badge}</td>
+          </tr>`;}).join('')}</tbody>
+      </table></div></div>
+  ` : '';
+
+  const cat2 = offerCatalogEntry(name); // ensures funnels/headlines/creatives arrays exist even on older entries
+  const funnelsHtml = `
+    <div class="field"><label class="field-label" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Funnels</span><button class="toolbar-btn xs" onclick="editFunnel('${esc(encodedName)}')">+ Add funnel</button></label>
+      ${cat2.funnels.length ? cat2.funnels.map(f=>`
+        <div class="ai-row" style="padding:9px 0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:.5;margin-top:2px;flex-shrink:0"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
+          <div class="ai-text">${f.url?`<a class="link" href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name||f.url)}</a>`:`<b>${esc(f.name||'Untitled funnel')}</b>`}
+            ${f.notes?`<div class="ai-tags"><span class="ai-tag">${esc(f.notes)}</span></div>`:''}</div>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="editFunnel('${esc(encodedName)}','${f.id}')" title="Edit"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+            <button class="icon-btn danger" onclick="delFunnel('${esc(encodedName)}','${f.id}')" title="Delete"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+          </div>
+        </div>`).join('') : '<div class="hint">No funnels linked yet.</div>'}
+    </div>`;
+  const headlinesHtml = `
+    <div class="field"><label class="field-label" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Headlines</span><button class="toolbar-btn xs" onclick="editHeadline('${esc(encodedName)}')">+ Add headline</button></label>
+      ${cat2.headlines.length ? cat2.headlines.map(h=>`
+        <div class="ai-row" style="padding:9px 0">
+          <div class="ai-text">${esc(h.text)}</div>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="editHeadline('${esc(encodedName)}','${h.id}')" title="Edit"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+            <button class="icon-btn danger" onclick="delHeadline('${esc(encodedName)}','${h.id}')" title="Delete"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+          </div>
+        </div>`).join('') : '<div class="hint">No headlines logged yet.</div>'}
+    </div>`;
+  const creativesHtml = `
+    <div class="field"><label class="field-label">Creatives</label>
+      <div class="ins-media-grid">
+        ${cat2.creatives.map((m,i)=>`
+          <div class="ins-thumb" onclick="openOfferLightbox('${esc(encodedName)}',${i})">
+            ${m.type==='video'
+              ? `<video src="${esc(m.url)}" preload="metadata" muted></video><div class="ins-play"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
+              : `<img src="${esc(m.url)}" alt="${esc(m.caption||'')}" loading="lazy" onerror="mediaImgError(this)">`}
+            <button class="ins-remove" onclick="event.stopPropagation();delOfferCreative('${esc(encodedName)}','${m.id}')" title="Remove">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
+          </div>`).join('')}
+        <div class="ins-add-media" onclick="openAddOfferCreative('${esc(encodedName)}')" title="Add image or video">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+          Add
+        </div>
+      </div>
+    </div>`;
+
   openModal({ title: group.name, sub: `Tested on ${group.instances.length} platform${group.instances.length===1?'':'s'}${group.toTest?` · ${group.toTest} still to test`:''}`, icon:'icon-teal', wide:true,
     body: `
       <div class="stat-grid" style="margin-bottom:16px">
@@ -3154,6 +3282,10 @@ function openOfferDetail(encodedName){
         <thead><tr><th>Platform</th><th>Status</th><th>Launched</th><th style="text-align:right">Spend</th><th style="text-align:right">Revenue</th><th style="text-align:right">P&amp;L</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
+      ${funnelsHtml}
+      ${headlinesHtml}
+      ${creativesHtml}
+      ${kpisHtml}
       ${availablePlatforms.length ? `
         <div class="field" style="margin-top:16px"><label class="field-label">Test this offer on another platform</label>
           <div style="display:flex;gap:8px">
@@ -3163,6 +3295,100 @@ function openOfferDetail(encodedName){
         </div>` : ''}`,
     footer: `<button class="toolbar-btn" onclick="closeModal()">Close</button>` });
 }
+/* ═══════════════ OFFER: FUNNELS ═══════════════ */
+function editFunnel(encodedName, id){
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  const f = id ? cat.funnels.find(x=>x.id===id) : { name:'', url:'', notes:'' };
+  openModal({ title: id?'Edit funnel':'Add funnel', icon:'icon-blue',
+    body: fld('Name','f-fun-name',f.name,{ph:'e.g. VSL v3'})
+      + fld('URL','f-fun-url',f.url,{ph:'https://…',hint:'Link to the actual funnel/landing page, or its spy-tool entry.'})
+      + fld('Notes','f-fun-notes',f.notes,{type:'textarea',style:'min-height:60px'}),
+    footer: ftr(`saveFunnel('${encodedName}',${id?`'${id}'`:'null'})`,
+      id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delFunnel('${encodedName}','${id}')">Delete</button>`:'') });
+}
+function saveFunnel(encodedName, id){
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  const d = { name:V('f-fun-name'), url:V('f-fun-url'), notes:V('f-fun-notes') };
+  if (id) Object.assign(cat.funnels.find(x=>x.id===id), d);
+  else cat.funnels.push(Object.assign({id:uid()}, d));
+  save(); closeModal(); openOfferDetail(encodedName); toast('Funnel saved','success');
+}
+function delFunnel(encodedName, id){
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  cat.funnels = cat.funnels.filter(x=>x.id!==id);
+  save(); openOfferDetail(encodedName); toast('Funnel removed');
+}
+
+/* ═══════════════ OFFER: HEADLINES ═══════════════ */
+function editHeadline(encodedName, id){
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  const h = id ? cat.headlines.find(x=>x.id===id) : { text:'' };
+  openModal({ title: id?'Edit headline':'Add headline', icon:'icon-blue',
+    body: fld('Headline','f-hl-text',h.text,{type:'textarea',style:'min-height:70px',ph:'The exact copy being tested…'}),
+    footer: ftr(`saveHeadline('${encodedName}',${id?`'${id}'`:'null'})`,
+      id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delHeadline('${encodedName}','${id}')">Delete</button>`:'') });
+}
+function saveHeadline(encodedName, id){
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  const text = V('f-hl-text');
+  if (id) Object.assign(cat.headlines.find(x=>x.id===id), { text });
+  else cat.headlines.push({ id:uid(), text });
+  save(); closeModal(); openOfferDetail(encodedName); toast('Headline saved','success');
+}
+function delHeadline(encodedName, id){
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  cat.headlines = cat.headlines.filter(x=>x.id!==id);
+  save(); openOfferDetail(encodedName); toast('Headline removed');
+}
+
+/* ═══════════════ OFFER: CREATIVES (real upload + gallery) ═══════════════ */
+function openAddOfferCreative(encodedName){
+  openModal({ title:'Add image or video', sub:'Uploads go to shared storage — everyone with the link can see them', icon:'icon-coral',
+    body: `
+      <div class="field"><label class="field-label">Upload a file</label>
+        <input class="inp" type="file" id="f-cr-file" accept="image/*,video/*">
+        <div class="hint" id="f-cr-upload-status"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="field"><label class="field-label">…or paste an existing link</label>
+        <input class="inp" id="f-cr-url" placeholder="https://res.cloudinary.com/…/angle-01.jpg"></div>
+      ${fld('Caption (optional)','f-cr-caption','',{ph:'Short label for this file'})}`,
+    footer: `<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
+      <button class="toolbar-btn primary" id="f-cr-save-btn" onclick="saveOfferCreative('${encodedName}')">Add</button>` });
+}
+async function saveOfferCreative(encodedName){
+  const file = document.getElementById('f-cr-file').files[0];
+  const pastedUrl = V('f-cr-url');
+  const caption = V('f-cr-caption');
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  const statusEl = document.getElementById('f-cr-upload-status');
+  const btn = document.getElementById('f-cr-save-btn');
+  if (!file && !pastedUrl) { toast('Choose a file or paste a link','error'); return; }
+  btn.disabled = true;
+  try {
+    let url, type;
+    if (file) {
+      if (statusEl) statusEl.textContent = 'Uploading…';
+      url = await uploadToStorage(file);
+      type = file.type.startsWith('video/') ? 'video' : 'image';
+    } else {
+      url = pastedUrl;
+      type = guessMediaType(pastedUrl);
+    }
+    cat.creatives.push({ id:uid(), type, url, caption });
+    save(); closeModal(); openOfferDetail(encodedName); toast('Creative added','success');
+  } catch(e){
+    btn.disabled = false;
+    if (statusEl) statusEl.textContent = '';
+    toast('Upload failed: '+e.message, 'error');
+  }
+}
+function delOfferCreative(encodedName, id){
+  const cat = offerCatalogEntry(decodeURIComponent(encodedName));
+  cat.creatives = cat.creatives.filter(x=>x.id!==id);
+  save(); openOfferDetail(encodedName); toast('Removed');
+}
+
 function addOfferToPlatform(encodedName, pid){
   if (!pid) return;
   const name = decodeURIComponent(encodedName);
@@ -3367,10 +3593,34 @@ function delMeeting(pid, mid){
 }
 
 /* ═══════════════ KPIs ═══════════════ */
+function editImportantNote(pid, id){
+  const n = id ? P(pid).importantNotes.find(x=>x.id===id) : { text:'' };
+  openModal({ title: id?'Edit note':'Add important note', sub:P(pid).name, icon:'icon-coral',
+    body: fld('Note','f-inote-text',n.text,{type:'textarea',style:'min-height:110px',ph:'Anything worth flagging so it does not get lost…'}),
+    footer: ftr(`saveImportantNote('${pid}',${id?`'${id}'`:'null'})`,
+      id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delImportantNote('${pid}','${id}')">Delete</button>`:'') });
+}
+function saveImportantNote(pid, id){
+  const text = V('f-inote-text');
+  const p = P(pid);
+  if (id) Object.assign(p.importantNotes.find(x=>x.id===id), { text });
+  else p.importantNotes.push({ id:uid(), text, createdAt:new Date().toISOString() });
+  save(); closeModal(); renderPlatform(); toast(id?'Note updated':'Note added','success');
+}
+function delImportantNote(pid, id){
+  const n = P(pid).importantNotes.find(x=>x.id===id);
+  confirmModal('Delete this note?', `"${esc((n.text||'').slice(0,80))}${n.text&&n.text.length>80?'…':''}" will be removed.`, 'Delete', ()=>{
+    P(pid).importantNotes = P(pid).importantNotes.filter(x=>x.id!==id); save(); renderPlatform(); toast('Note deleted');
+  }, true);
+}
 function editKpi(pid, kid){
-  const k = kid ? P(pid).kpis.find(x=>x.id===kid) : { metric:'', period:'Monthly', target:'', actual:'', lowerBetter:false, note:'' };
+  const k = kid ? P(pid).kpis.find(x=>x.id===kid) : { metric:'', period:'Monthly', target:'', actual:'', lowerBetter:false, note:'', offerName:'' };
+  const offerNames = [...new Set(P(pid).offers.map(o=>o.name))];
   openModal({ title: kid?'Edit KPI':'Add KPI', sub:P(pid).name, icon:'icon-coral',
     body:`${fld('Metric','f-kmet',k.metric,{ph:'Blended ROI, CPL, monthly spend…'})}
+      ${fld('Linked offer','f-koffer',k.offerName,{type:'select',
+        options:[['','General — not tied to one offer'], ...offerNames.map(n=>[n,n])],
+        hint: offerNames.length ? 'Tie this KPI to a specific offer to see it on that offer detail view, across every platform it runs on.' : 'No offers logged on this platform yet — add one first if you want to link a KPI to it.'})}
       <div class="grid-2">
         ${fld('Period','f-kper',k.period,{type:'select',options:[['Weekly','Weekly'],['Monthly','Monthly'],['Quarterly','Quarterly'],['One-off','One-off']]})}
         ${fld('Direction','f-klow',k.lowerBetter?'1':'0',{type:'select',options:[['0','Higher is better'],['1','Lower is better']]})}
@@ -3382,7 +3632,7 @@ function editKpi(pid, kid){
 }
 function saveKpi(pid, kid){
   const m = V('f-kmet') || 'Untitled metric';
-  const d = { metric:m, period:V('f-kper'), target:V('f-ktgt'), actual:V('f-kact'), lowerBetter:V('f-klow')==='1', note:V('f-knote') };
+  const d = { metric:m, offerName:V('f-koffer'), period:V('f-kper'), target:V('f-ktgt'), actual:V('f-kact'), lowerBetter:V('f-klow')==='1', note:V('f-knote') };
   if (kid) Object.assign(P(pid).kpis.find(x=>x.id===kid), d);
   else P(pid).kpis.push(Object.assign({id:uid()}, d));
   save(); closeModal(); renderPlatform(); toast('KPI saved','success');
@@ -3498,9 +3748,25 @@ function delCreativeMedia(pid, insightId, mediaId){
 }
 
 /* ═══════════════ LIGHTBOX ═══════════════ */
-let _lightbox = null; // { pid, insightId, index }
+let _lightbox = null; // { source:'insight', pid, insightId, index } | { source:'offer', key, index }
+function getLightboxMedia(){
+  if (!_lightbox) return null;
+  if (_lightbox.source === 'offer') return (S.offerCatalog[_lightbox.key]||{}).creatives || [];
+  const ins = P(_lightbox.pid).creativeInsights.find(x=>x.id===_lightbox.insightId);
+  return ins ? ins.media : [];
+}
+function getLightboxCaption(m){
+  if (_lightbox.source === 'offer') return (m&&m.caption) || (S.offerCatalog[_lightbox.key]||{}).displayName || '';
+  const ins = P(_lightbox.pid).creativeInsights.find(x=>x.id===_lightbox.insightId);
+  return (m&&m.caption) || (ins&&ins.title) || '';
+}
 function openLightbox(pid, insightId, index){
-  _lightbox = { pid, insightId, index };
+  _lightbox = { source:'insight', pid, insightId, index };
+  renderLightbox();
+  document.getElementById('lightbox').classList.remove('hidden');
+}
+function openOfferLightbox(encodedName, index){
+  _lightbox = { source:'offer', key: normOfferName(decodeURIComponent(encodedName)), index };
   renderLightbox();
   document.getElementById('lightbox').classList.remove('hidden');
 }
@@ -3511,22 +3777,22 @@ function closeLightbox(){
 }
 function lightboxNav(dir){
   if (!_lightbox) return;
-  const media = P(_lightbox.pid).creativeInsights.find(x=>x.id===_lightbox.insightId).media;
+  const media = getLightboxMedia();
+  if (!media || !media.length) return;
   _lightbox.index = (_lightbox.index + dir + media.length) % media.length;
   renderLightbox();
 }
 function renderLightbox(){
   if (!_lightbox) return;
-  const ins = P(_lightbox.pid).creativeInsights.find(x=>x.id===_lightbox.insightId);
-  const media = ins.media || [];
-  if (!media.length) { closeLightbox(); return; }
+  const media = getLightboxMedia();
+  if (!media || !media.length) { closeLightbox(); return; }
   if (_lightbox.index >= media.length) _lightbox.index = media.length - 1;
   const m = media[_lightbox.index];
   const content = document.getElementById('lightbox-content');
   content.innerHTML = m.type==='video'
     ? `<video src="${esc(m.url)}" controls autoplay></video>`
     : `<img src="${esc(m.url)}" alt="${esc(m.caption||'')}">`;
-  document.getElementById('lightbox-caption').textContent = m.caption || ins.title || '';
+  document.getElementById('lightbox-caption').textContent = getLightboxCaption(m);
   document.getElementById('lightbox-counter').textContent = media.length>1 ? `${_lightbox.index+1} / ${media.length}` : '';
   const showNav = media.length>1;
   document.getElementById('lightbox-prev').style.display = showNav?'flex':'none';
