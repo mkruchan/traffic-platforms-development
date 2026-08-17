@@ -1200,7 +1200,6 @@ const TITLES = {
   settings: ['Settings & data','Identity, linked tools, cloud sync, backup']
 };
 function go(v, pid){
-  if (v==='settings' && !isAuthorizedEditor()) { v = 'dashboard'; toast("You don't have access to Settings",'error'); }
   view = v; if (pid) curPid = pid;
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
@@ -1279,7 +1278,7 @@ function renderNav(){
   const rl = document.getElementById('nav-research-link');
   rl.href = researchUrl('') || '#';
   const settingsBtn = document.getElementById('nav-settings-btn');
-  if (settingsBtn) settingsBtn.style.display = isAuthorizedEditor() ? '' : 'none';
+  if (settingsBtn) settingsBtn.style.display = '';
   if (view==='platform'){
     const nav = document.querySelector(`.ds-nav-item[data-nav="pf-${curPid}"]`);
     if (nav) nav.classList.add('active');
@@ -2416,7 +2415,7 @@ create policy "anyone_reads_media" on storage.objects for select
           <div class="field-label" style="margin:16px 0 8px">Data</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="toolbar-btn" onclick="document.getElementById('import-input').click()">Import JSON</button>
-            <button class="toolbar-btn danger" onclick="resetAll()">Reset everything</button>
+            ${isSignedIn()?'<button class="toolbar-btn danger" onclick="resetAll()">Reset everything</button>':''}
           </div>
           <div class="hint" style="margin-top:12px">Data lives in this browser. Export a JSON backup before switching machines, and push to cloud sync if the team needs the same view.</div>
           <div class="divider"></div>
