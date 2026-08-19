@@ -663,6 +663,25 @@ const ADVERTISER_STATUS = {
   io_signed:      { label:'IO Signed',           cls:'b-teal',   dot:'#059669' },
   lost:           { label:'Lost / Archived',     cls:'b-coral',  dot:'#ef4444' }
 };
+const ADVERTISER_PRIORITY = {
+  urgent: { label:'Urgent', color:'#dc2626' },
+  high:   { label:'High',   color:'#f59e0b' },
+  normal: { label:'Normal', color:'#3b82f6' },
+  low:    { label:'Low',    color:'#9ca3af' }
+};
+// Assigns each distinct vertical name a consistent color from a fixed palette —
+// same vertical text always maps to the same color, no manual setup needed.
+const VERTICAL_PALETTE = ['#3b82f6','#8b5cf6','#f59e0b','#16a34a','#ec4899','#0ea5e9','#f97316','#14b8a6','#a855f7','#dc2626','#0d9488','#6366f1','#059669','#d946ef','#eab308','#2563eb'];
+function colorForVertical(v){
+  const key = String(v||'').trim().toLowerCase();
+  if (!key) return '#9ca3af';
+  let hash = 0x811c9dc5; // FNV-1a — much better distribution than a simple polynomial hash
+  for (let i=0;i<key.length;i++){
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return VERTICAL_PALETTE[(hash>>>0) % VERTICAL_PALETTE.length];
+}
 const OFFER_STATUS = {
   queued:     { label:'To test',    cls:'b-amber'  },
   testing:    { label:'Testing',    cls:'b-blue'   },
@@ -2066,17 +2085,23 @@ function renderAdvertisers(){
         <div class="kanban-col-head"><span class="kanban-col-dot" style="background:${v.dot}"></span>
           <span class="kanban-col-title">${esc(v.label)}</span><span class="kanban-col-count">${items.length}</span></div>
         <div class="kanban-col-body">
-          ${items.length ? items.map(a=>`
-            <div class="kanban-card" draggable="true" ondragstart="kanbanDragStart(event,'${a.id}')" ondragend="kanbanDragEnd(event)" onclick="editAdvertiser('${a.id}')">
-              <div class="kanban-card-name">${esc(a.name)}</div>
-              ${a.vertical?`<span class="badge b-grey" style="margin-top:3px;margin-bottom:2px">${esc(a.vertical)}</span>`:''}
+          ${items.length ? items.map(a=>{
+            const vColor = colorForVertical(a.vertical);
+            const pri = ADVERTISER_PRIORITY[a.priority];
+            return `
+            <div class="kanban-card" draggable="true" ondragstart="kanbanDragStart(event,'${a.id}')" ondragend="kanbanDragEnd(event)" onclick="editAdvertiser('${a.id}')" style="border-left:3px solid ${vColor}">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+                <div class="kanban-card-name">${esc(a.name)}</div>
+                ${pri?`<span title="${esc(pri.label)} priority" style="width:8px;height:8px;border-radius:50%;background:${pri.color};flex-shrink:0;margin-top:4px"></span>`:''}
+              </div>
+              ${a.vertical?`<span class="badge" style="margin-top:3px;margin-bottom:2px;background:${vColor}22;color:${vColor}">${esc(a.vertical)}</span>`:''}
               ${a.contactName||a.contactEmail?`<div class="kanban-card-meta">${esc(a.contactName||'')}${a.contactName&&a.contactEmail?' · ':''}${esc(a.contactEmail||'')}</div>`:''}
               ${a.linkedin?`<a href="${esc(a.linkedin)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);margin-top:4px;text-decoration:none">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM3.558 20.452h3.559V9H3.558v11.452z"/></svg>
                 LinkedIn</a>`:''}
               ${a.notes?`<div class="kanban-card-notes">${esc(a.notes)}</div>`:''}
               ${(()=>{ const g = offersByName().find(x=>x.key===normOfferName(a.name)); return g ? `<div style="margin-top:5px;font-size:10.5px;color:var(--accent);cursor:pointer" onclick="event.stopPropagation();openOfferDetail('${esc(encodeURIComponent(a.name))}')">→ Running on ${g.instances.length} platform${g.instances.length===1?'':'s'}</div>` : ''; })()}
-            </div>`).join('')
+            </div>`;}).join('')
           : '<div class="kanban-empty">Nothing here</div>'}
         </div>
       </div>`;
@@ -3536,7 +3561,7 @@ function toggleMeetingPlayer(videoUrl, audioUrl, transcriptUrl){
   }
 }
 function editAdvertiser(id){
-  const a = id ? S.advertisers.find(x=>x.id===id) : { name:'', status:'untouched', vertical:'', contactName:'', contactEmail:'', linkedin:'', notes:'' };
+  const a = id ? S.advertisers.find(x=>x.id===id) : { name:'', status:'untouched', vertical:'', priority:'normal', contactName:'', contactEmail:'', linkedin:'', notes:'' };
   const cat = a.name ? offerCatalogEntry(a.name) : null;
   const inheritedVertical = (!a.vertical && cat && cat.vertical) ? cat.vertical : '';
   const matchingOffer = a.name ? offersByName().find(g => g.key === normOfferName(a.name)) : null;
@@ -3545,9 +3570,10 @@ function editAdvertiser(id){
         <input class="inp" id="f-adv-name" value="${esc(a.name)}" placeholder="e.g. Orivelle Health" oninput="onAdvertiserNameInput(this.value)"></div>
       <div class="grid-2">
         ${fld('Status','f-adv-status',a.status,{type:'select',options:Object.entries(ADVERTISER_STATUS).map(([k,v])=>[k,v.label])})}
-        <div class="field"><label class="field-label">Vertical</label>
-          <input class="inp" id="f-adv-vertical" value="${esc(a.vertical||inheritedVertical)}" placeholder="Health, dating, insurance…"></div>
+        ${fld('Priority','f-adv-priority',a.priority||'normal',{type:'select',options:Object.entries(ADVERTISER_PRIORITY).map(([k,v])=>[k,v.label])})}
       </div>
+      <div class="field"><label class="field-label">Vertical</label>
+        <input class="inp" id="f-adv-vertical" value="${esc(a.vertical||inheritedVertical)}" placeholder="Health, dating, insurance…"></div>
       <div class="grid-2">
         ${fld('Contact name','f-adv-cname',a.contactName,{ph:'Who you are talking to'})}
         ${fld('Contact email','f-adv-cemail',a.contactEmail,{type:'email',ph:'name@advertiser.com'})}
@@ -3569,7 +3595,7 @@ function saveAdvertiser(id){
   let vertical = V('f-adv-vertical');
   const existingCatalog = offerCatalogEntry(name);
   if (!vertical && existingCatalog && existingCatalog.vertical) vertical = existingCatalog.vertical;
-  const d = { name, status:V('f-adv-status'), vertical, contactName:V('f-adv-cname'), contactEmail:V('f-adv-cemail'),
+  const d = { name, status:V('f-adv-status'), priority:V('f-adv-priority'), vertical, contactName:V('f-adv-cname'), contactEmail:V('f-adv-cemail'),
     linkedin:V('f-adv-linkedin'), notes:V('f-adv-notes'), updatedAt: new Date().toISOString() };
   if (id) Object.assign(S.advertisers.find(x=>x.id===id), d);
   else S.advertisers.push(Object.assign({ id:uid(), createdAt:new Date().toISOString() }, d));
