@@ -2080,7 +2080,12 @@ function renderAdvertisers(){
   </div>
   <div class="kanban-board">
     ${cols.map(([k,v])=>{
-      const items = S.advertisers.filter(a=>a.status===k).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
+      const priRank = { urgent:0, high:1, normal:2, low:3 };
+      const items = S.advertisers.filter(a=>a.status===k).sort((a,b)=>{
+        const pa = priRank[a.priority] ?? 4, pb = priRank[b.priority] ?? 4;
+        if (pa !== pb) return pa - pb;
+        return (b.updatedAt||'').localeCompare(a.updatedAt||'');
+      });
       return `<div class="kanban-col" data-status="${k}" ondragover="kanbanDragOver(event,'${k}')" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event,'${k}')">
         <div class="kanban-col-head"><span class="kanban-col-dot" style="background:${v.dot}"></span>
           <span class="kanban-col-title">${esc(v.label)}</span><span class="kanban-col-count">${items.length}</span></div>
@@ -2092,8 +2097,8 @@ function renderAdvertisers(){
             <div class="kanban-card" draggable="true" ondragstart="kanbanDragStart(event,'${a.id}')" ondragend="kanbanDragEnd(event)" onclick="editAdvertiser('${a.id}')" style="border-left:3px solid ${vColor}">
               <div class="kanban-card-name">${esc(a.name)}</div>
               <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;margin-bottom:2px">
-                ${a.vertical?`<span class="badge" style="background:${vColor}22;color:${vColor}">${esc(a.vertical)}</span>`:''}
-                ${pri?`<span class="badge" style="background:${pri.color}22;color:${pri.color}">${esc(pri.label)}</span>`:''}
+                ${a.vertical?`<span class="badge" style="background:${vColor}22;color:${vColor};padding:2px 7px;font-size:9px">${esc(a.vertical)}</span>`:''}
+                ${pri?`<span class="badge" style="background:${pri.color}22;color:${pri.color};padding:2px 7px;font-size:9px">${esc(pri.label)}</span>`:''}
               </div>
               ${a.contactName||a.contactEmail?`<div class="kanban-card-meta">${esc(a.contactName||'')}${a.contactName&&a.contactEmail?' · ':''}${esc(a.contactEmail||'')}</div>`:''}
               ${a.linkedin?`<a href="${esc(a.linkedin)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);margin-top:4px;text-decoration:none">
