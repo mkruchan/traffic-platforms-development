@@ -518,13 +518,9 @@ body.sidebar-collapsed .ds-main { margin-left: 0; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
       New Offers Pipeline<span class="nav-count" id="nav-count-advertisers">0</span>
     </button>
-    <button class="ds-nav-item" data-nav="actions" onclick="go('actions')">
+    <button class="ds-nav-item" id="nav-actions-btn" data-nav="actions" onclick="go('actions')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
       Action items<span class="nav-count" id="nav-count-actions">0</span>
-    </button>
-    <button class="ds-nav-item" data-nav="meetings" onclick="go('meetings')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>
-      Meetings<span class="nav-count" id="nav-count-meetings">0</span>
     </button>
 
     <div class="ds-nav-section">Platforms</div>
@@ -810,7 +806,7 @@ function seedPlatform(o){
                payment:'', tracking:'', formats:'', constraints:'', spyNotes:'' },
     stages: STAGE_TEMPLATE.map((s,i)=>({ id:uid(), label:s[0], hint:s[1], note:'', done:false })),
     kpis: [], actions: [], meetings: [], offers: [], research: [],
-    trafficInsights: [], creativeInsights: [], importantNotes: [], notes:''
+    trafficInsights: [], creativeInsights: [], importantNotes: [], topOffers: [], notes:''
   }, o);
 }
 
@@ -1001,7 +997,7 @@ function load(){
   S.platforms.forEach(p => {
     const base = seedPlatform({});
     ['poc','strategy'].forEach(k => p[k] = Object.assign({}, base[k], p[k]||{}));
-    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights','importantNotes'].forEach(k => { if(!Array.isArray(p[k])) p[k]=[]; });
+    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights','importantNotes','topOffers'].forEach(k => { if(!Array.isArray(p[k])) p[k]=[]; });
     if (!p.stages.length) p.stages = base.stages;
     if (!p.fg) p.fg = '#ffffff';
     if (p.logoKey===undefined) p.logoKey = '';
@@ -1219,6 +1215,7 @@ const TITLES = {
   settings: ['Settings & data','Identity, linked tools, cloud sync, backup']
 };
 function go(v, pid){
+  if (v==='actions' && !isSignedIn()) { v = 'dashboard'; toast('Action items is only visible to signed-in editors','error'); }
   view = v; if (pid) curPid = pid;
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
@@ -1292,12 +1289,13 @@ function renderNav(){
   }).join('');
   document.getElementById('nav-count-offers').textContent = allOffers().length;
   document.getElementById('nav-count-actions').textContent = allActions().filter(a=>!a.done).length;
-  document.getElementById('nav-count-meetings').textContent = allMeetings().length;
   document.getElementById('nav-count-advertisers').textContent = S.advertisers.filter(a=>a.status!=='io_signed'&&a.status!=='lost').length;
   const rl = document.getElementById('nav-research-link');
   rl.href = researchUrl('') || '#';
   const settingsBtn = document.getElementById('nav-settings-btn');
   if (settingsBtn) settingsBtn.style.display = '';
+  const actionsBtn = document.getElementById('nav-actions-btn');
+  if (actionsBtn) actionsBtn.style.display = isSignedIn() ? '' : 'none';
   if (view==='platform'){
     const nav = document.querySelector(`.ds-nav-item[data-nav="pf-${curPid}"]`);
     if (nav) nav.classList.add('active');
@@ -1349,7 +1347,7 @@ function renderDashboard(){
   </div>
 
   <div class="grid-2" style="align-items:start">
-    <div class="section">
+    ${isSignedIn() ? `<div class="section">
       <div class="section-header">
         <div class="section-icon icon-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
         <div><h2>Next steps</h2><div class="sh-sub">Soonest first</div></div>
@@ -1359,7 +1357,7 @@ function renderDashboard(){
         openA.length ? openA.sort(sortByDue).slice(0,8).map(a=>actionRow(a,true)).join('')
         : `<div class="empty"><div class="empty-title">Nothing open</div><div class="empty-sub">Add an action item from any platform to start tracking next steps.</div></div>`
       }</div>
-    </div>
+    </div>` : ''}
     <div class="section">
       <div class="section-header">
         <div class="section-icon icon-purple"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
@@ -1368,7 +1366,7 @@ function renderDashboard(){
       <div class="section-body flush"><div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Platform</th><th>Contact</th><th>Cadence</th><th>Next call</th></tr></thead>
         <tbody>${S.platforms.map(p=>`
-          <tr style="cursor:pointer" onclick="openPlatform('${p.id}','meetings')">
+          <tr style="cursor:pointer" onclick="openPlatform('${p.id}','overview')">
             <td><div style="display:flex;align-items:center;gap:8px">${logoChip(p,22)}<b>${esc(p.name)}</b></div></td>
             <td>${p.poc.name?esc(p.poc.name):'<span style="color:var(--coral-text);font-weight:600">No POC yet</span>'}</td>
             <td>${p.poc.cadence?esc(p.poc.cadence)+(p.poc.meetingDay?' · '+esc(p.poc.meetingDay):''):'—'}</td>
@@ -1419,13 +1417,10 @@ function renderPlatform(){
   const tabs = [
     ['overview','Overview',''],
     ['topoffers','Top offers',''],
-    ['kpis','KPIs', p.kpis.length||''],
-    ['creative','Creative insights', p.creativeInsights.length||''],
     ['important','Important notes', p.importantNotes.length||''],
     ['offers','Offer Tests', p.offers.length||''],
     ['plan','Development plan', t.stagesDone+'/'+t.stagesTotal],
     ['actions','Action items', t.openActions||''],
-    ['meetings','Meetings', p.meetings.length||'']
   ];
 
   document.getElementById('view-platform').innerHTML = `
@@ -1645,29 +1640,27 @@ function tabCreativeInsights(p){
 }
 
 function tabTopOffers(p){
-  const ranked = p.offers.filter(o=>(Number(o.spend)||0)>0||(Number(o.revenue)||0)>0)
-    .slice().sort((a,b)=>offerPnl(b).profit-offerPnl(a).profit);
-  const rowsFor = list => list.map((o,i)=>{
-    const adv = S.advertisers.find(a=>normOfferName(a.name)===normOfferName(o.name));
-    return `<tr style="cursor:pointer" onclick="openOfferDetail('${esc(encodeURIComponent(o.name))}')">
-      <td style="color:var(--text-muted);font-weight:700;width:30px">${i+1}</td>
-      <td><b>${esc(o.name)}</b></td>
-      <td style="color:var(--text-secondary)">${adv?esc(adv.contactName||adv.name):'—'}</td>
-    </tr>`;
-  }).join('');
   return `<div class="section">
     <div class="section-header">
       <div class="section-icon icon-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
-      <div><h2>Top offers</h2><div class="sh-sub">Offer and advertiser names — spend, revenue, and status live in Offer Tests</div></div>
-      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editOffer('${p.id}')">+ Add offer</button></div>
+      <div><h2>Top offers</h2><div class="sh-sub">Offers known to perform well on ${esc(p.name)} — not tied to our own tests</div></div>
+      <div class="sh-actions"><button class="toolbar-btn primary xs" onclick="editTopOffer('${p.id}')">+ Add offer</button></div>
     </div>
-    ${ranked.length ? `<div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>#</th><th>Offer</th><th>Advertiser</th></tr></thead>
-      <tbody>${rowsFor(ranked)}</tbody>
-    </table></div>`
-    : `<div class="empty"><div class="empty-title">No offers with spend or revenue yet</div>
-      <div class="empty-sub">Once an offer on ${esc(p.name)} has spend or revenue logged, it'll show here.</div>
-      <button class="toolbar-btn primary" onclick="editOffer('${p.id}')">Add an offer</button></div>`}
+    <div class="section-body flush">${p.topOffers.length ? p.topOffers.map(o=>`
+      <div class="ai-row" ${dragAttrs(p.id,'topOffers',o.id)}>
+        <span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span>
+        <div class="ai-text" style="cursor:pointer" onclick="editTopOffer('${p.id}','${o.id}')">
+          <b>${esc(o.name)}</b>
+          <div class="ai-tags">${o.vertical?`<span class="ai-tag">${esc(o.vertical)}</span>`:''}${o.notes?`<span class="ai-tag">${esc(o.notes)}</span>`:''}</div>
+        </div>
+        <div class="row-actions">
+          <button class="icon-btn" onclick="editTopOffer('${p.id}','${o.id}')" title="Edit"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
+          <button class="icon-btn danger" onclick="delTopOffer('${p.id}','${o.id}')" title="Delete"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
+        </div>
+      </div>`).join('')
+      : `<div class="empty"><div class="empty-title">No top offers listed yet</div>
+        <div class="empty-sub">A running list of offers you know do well here — from spy tools, industry knowledge, or reputation — whether or not you've tested them yourself.</div>
+        <button class="toolbar-btn primary" onclick="editTopOffer('${p.id}')">Add the first one</button></div>`}</div>
   </div>`;
 }
 function tabPlan(p){
@@ -2523,7 +2516,7 @@ function load2(){
   }
   S.platforms.forEach(p=>{ const base = seedPlatform({});
     ['poc','strategy'].forEach(k=>p[k]=Object.assign({},base[k],p[k]||{}));
-    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights','importantNotes'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
+    ['stages','kpis','actions','meetings','offers','research','trafficInsights','creativeInsights','importantNotes','topOffers'].forEach(k=>{ if(!Array.isArray(p[k])) p[k]=[]; }); });
   if (!S.brandingMigratedV2) {
     S.platforms.forEach(p=>{ const b = BRAND_DEFAULTS[p.name]; if (b) Object.assign(p, b); });
     S.brandingMigratedV2 = true;
@@ -3641,6 +3634,29 @@ function delMeeting(pid, mid){
 }
 
 /* ═══════════════ KPIs ═══════════════ */
+function editTopOffer(pid, id){
+  const o = id ? P(pid).topOffers.find(x=>x.id===id) : { name:'', vertical:'', notes:'' };
+  openModal({ title: id?'Edit top offer':'Add top offer', sub:P(pid).name, icon:'icon-teal',
+    body: fld('Offer name','f-to-name',o.name,{ph:'e.g. Orivelle Health'})
+      + fld('Vertical (optional)','f-to-vertical',o.vertical,{ph:'Health, dating, insurance…'})
+      + fld('Notes (optional)','f-to-notes',o.notes,{type:'textarea',style:'min-height:60px',ph:'Where you saw it, why it stands out…'}),
+    footer: ftr(`saveTopOffer('${pid}',${id?`'${id}'`:'null'})`,
+      id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delTopOffer('${pid}','${id}')">Delete</button>`:'') });
+}
+function saveTopOffer(pid, id){
+  const name = V('f-to-name') || 'Untitled offer';
+  const d = { name, vertical:V('f-to-vertical'), notes:V('f-to-notes') };
+  const p = P(pid);
+  if (id) Object.assign(p.topOffers.find(x=>x.id===id), d);
+  else p.topOffers.push(Object.assign({id:uid()}, d));
+  save(); closeModal(); renderPlatform(); toast(id?'Updated':'Added','success');
+}
+function delTopOffer(pid, id){
+  const o = P(pid).topOffers.find(x=>x.id===id);
+  confirmModal('Remove this offer?', `"${esc(o.name)}" will be removed from Top offers.`, 'Remove', ()=>{
+    P(pid).topOffers = P(pid).topOffers.filter(x=>x.id!==id); save(); renderPlatform(); toast('Removed');
+  }, true);
+}
 function editImportantNote(pid, id){
   const n = id ? P(pid).importantNotes.find(x=>x.id===id) : { text:'' };
   openModal({ title: id?'Edit note':'Add important note', sub:P(pid).name, icon:'icon-coral',
