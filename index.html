@@ -1649,10 +1649,7 @@ function tabTopOffers(p){
     <div class="section-body flush">${p.topOffers.length ? p.topOffers.map(o=>`
       <div class="ai-row" ${dragAttrs(p.id,'topOffers',o.id)}>
         <span class="drag-handle" title="Drag to reorder">${dragHandleSvg}</span>
-        <div class="ai-text" style="cursor:pointer" onclick="editTopOffer('${p.id}','${o.id}')">
-          <b>${esc(o.name)}</b>
-          <div class="ai-tags">${o.vertical?`<span class="ai-tag">${esc(o.vertical)}</span>`:''}${o.notes?`<span class="ai-tag">${esc(o.notes)}</span>`:''}</div>
-        </div>
+        <div class="ai-text" style="cursor:pointer;white-space:pre-wrap" onclick="editTopOffer('${p.id}','${o.id}')">${esc(o.text||o.name||'')}</div>
         <div class="row-actions">
           <button class="icon-btn" onclick="editTopOffer('${p.id}','${o.id}')" title="Edit"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z"/></svg></button>
           <button class="icon-btn danger" onclick="delTopOffer('${p.id}','${o.id}')" title="Delete"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h10M6.5 4V2.5h3V4M5 4l.5 9h5L11 4"/></svg></button>
@@ -3635,25 +3632,22 @@ function delMeeting(pid, mid){
 
 /* ═══════════════ KPIs ═══════════════ */
 function editTopOffer(pid, id){
-  const o = id ? P(pid).topOffers.find(x=>x.id===id) : { name:'', vertical:'', notes:'' };
-  openModal({ title: id?'Edit top offer':'Add top offer', sub:P(pid).name, icon:'icon-teal',
-    body: fld('Offer name','f-to-name',o.name,{ph:'e.g. Orivelle Health'})
-      + fld('Vertical (optional)','f-to-vertical',o.vertical,{ph:'Health, dating, insurance…'})
-      + fld('Notes (optional)','f-to-notes',o.notes,{type:'textarea',style:'min-height:60px',ph:'Where you saw it, why it stands out…'}),
+  const o = id ? P(pid).topOffers.find(x=>x.id===id) : { text:'' };
+  openModal({ title: id?'Edit offer':'Add top offer', sub:P(pid).name, icon:'icon-teal',
+    body: fld('Offer','f-to-text',o.text||o.name||'',{type:'textarea',style:'min-height:110px',ph:'Name it, and anything else worth noting — vertical, source, why it stands out…'}),
     footer: ftr(`saveTopOffer('${pid}',${id?`'${id}'`:'null'})`,
       id?`<button class="toolbar-btn danger spacer" onclick="closeModal();delTopOffer('${pid}','${id}')">Delete</button>`:'') });
 }
 function saveTopOffer(pid, id){
-  const name = V('f-to-name') || 'Untitled offer';
-  const d = { name, vertical:V('f-to-vertical'), notes:V('f-to-notes') };
+  const text = V('f-to-text');
   const p = P(pid);
-  if (id) Object.assign(p.topOffers.find(x=>x.id===id), d);
-  else p.topOffers.push(Object.assign({id:uid()}, d));
+  if (id) Object.assign(p.topOffers.find(x=>x.id===id), { text });
+  else p.topOffers.push({ id:uid(), text, createdAt:new Date().toISOString() });
   save(); closeModal(); renderPlatform(); toast(id?'Updated':'Added','success');
 }
 function delTopOffer(pid, id){
   const o = P(pid).topOffers.find(x=>x.id===id);
-  confirmModal('Remove this offer?', `"${esc(o.name)}" will be removed from Top offers.`, 'Remove', ()=>{
+  confirmModal('Remove this offer?', `"${esc((o.text||o.name||'').slice(0,80))}${(o.text||o.name||'').length>80?'…':''}" will be removed from Top offers.`, 'Remove', ()=>{
     P(pid).topOffers = P(pid).topOffers.filter(x=>x.id!==id); save(); renderPlatform(); toast('Removed');
   }, true);
 }
