@@ -3900,7 +3900,7 @@ window.addEventListener('resize', ()=>{ if(window.innerWidth>1024) closeSidebar(
      a company account (point2web.com / liftiq.com, email code) or a TPD editor reads; writes stay with the editors. ── -->
 <style>
   #cr-gate { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, .55); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  #cr-gate[hidden] { display: none; }
+  #cr-gate[hidden], #cr-gate form[hidden], #cr-gate button[hidden] { display: none; }
   body.cr-gated { overflow: hidden; }
   #cr-gate .gate-card { width: min(420px, 100%); border-radius: 18px; padding: 28px 26px; background: #fff; color: #0f172a; box-shadow: 0 24px 60px rgba(15, 23, 42, .28); display: flex; flex-direction: column; gap: 14px; text-align: center; }
   #cr-gate h1 { font-size: 20px; margin: 0; } #cr-gate p { margin: 0; color: #475569; font-size: 14px; line-height: 1.5; }
