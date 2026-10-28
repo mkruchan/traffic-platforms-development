@@ -2654,7 +2654,7 @@ function signOut(){
   saveAuth(); render(); toast('Signed out — back to read-only');
 }
 function openSignIn(){
-  openModal({ title:'Sign in to edit', sub:'Read access stays open to anyone with the link — only your account can save changes.', icon:'icon-blue',
+  openModal({ title:'Sign in to edit', sub:'Reading needs a company account (the email code on the front screen); editors sign in here with their password to save changes.', icon:'icon-blue',
     body: fld('Email','f-auth-email','',{type:'email',ph:'you@example.com'}) + fld('Password','f-auth-pass','',{type:'password'}),
     footer: `<button class="toolbar-btn" onclick="closeModal()">Cancel</button>
       <button class="toolbar-btn primary" onclick="signIn()">Sign in</button>` });
@@ -3892,10 +3892,77 @@ render();
 dot('saved', cloudConfigured() ? 'Connecting…' : 'Saved locally');
 (async () => {
   if (AUTH.accessToken && AUTH.expiresAt < Date.now() + 60000) await refreshAuthSession();
-  if (isSignedIn()) fetchEditors();
-  initCloudSync();
+  if (isSignedIn()) { fetchEditors(); initCloudSync(); }   // signed out: the gate below asks for the company sign-in first (2026-10-28)
 })();
 window.addEventListener('resize', ()=>{ if(window.innerWidth>1024) closeSidebar(); });
+</script>
+<!-- ── sign-in gate (2026-10-28): tpd_state is team-only in the database (creative-research-sites/supabase/47_other_apps_lock.sql):
+     a company account (point2web.com / liftiq.com, email code) or a TPD editor reads; writes stay with the editors. ── -->
+<style>
+  #cr-gate { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, .55); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  #cr-gate[hidden] { display: none; }
+  body.cr-gated { overflow: hidden; }
+  #cr-gate .gate-card { width: min(420px, 100%); border-radius: 18px; padding: 28px 26px; background: #fff; color: #0f172a; box-shadow: 0 24px 60px rgba(15, 23, 42, .28); display: flex; flex-direction: column; gap: 14px; text-align: center; }
+  #cr-gate h1 { font-size: 20px; margin: 0; } #cr-gate p { margin: 0; color: #475569; font-size: 14px; line-height: 1.5; }
+  #cr-gate form { display: flex; flex-direction: column; gap: 10px; }
+  #cr-gate input { height: 44px; border-radius: 10px; border: 1px solid #cbd5e1; padding: 0 12px; font: inherit; font-size: 15px; color: #0f172a; background: #fff; }
+  #cr-gate button { height: 44px; border-radius: 10px; border: 0; background: #2563eb; color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  #cr-gate button.secondary { background: transparent; color: #475569; font-weight: 500; height: auto; padding: 4px; }
+  #cr-gate .gate-msg { font-size: 13px; color: #b91c1c; min-height: 1em; }
+</style>
+<div id="cr-gate" hidden role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <div class="gate-card">
+    <h1 id="gate-title">Traffic Platforms Development</h1>
+    <p>Sign in with your company email to open the dashboard</p>
+    <form id="gate-form"><input id="gate-email" type="email" placeholder="you@point2web.com" required autocomplete="email"><button type="submit">Send code</button></form>
+    <form id="gate-verify" hidden><input id="gate-code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" required><button type="submit">Sign in</button></form>
+    <p class="gate-msg" id="gate-msg" role="status" aria-live="polite"></p>
+    <button type="button" class="secondary" id="gate-pass">Editor? Sign in with your password</button>
+    <button type="button" class="secondary" id="gate-out" hidden>Sign out</button>
+  </div>
+</div>
+<script>
+(function () {
+  const gate = document.getElementById('cr-gate'), $ = id => document.getElementById(id);
+  const msg = t => { $('gate-msg').textContent = t || ''; };
+  const show = t => { gate.hidden = false; document.body.classList.add('cr-gated'); msg(t); };
+  const hide = () => { gate.hidden = true; document.body.classList.remove('cr-gated'); };
+  async function post(path, body, bearer) {
+    const r = await fetch(SHARED_SUPABASE.url + path, { method: 'POST', headers: { 'apikey': SHARED_SUPABASE.key, 'Authorization': 'Bearer ' + (bearer || SHARED_SUPABASE.key), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    let j = null; try { j = await r.json(); } catch (e) {}
+    return { ok: r.ok, j };
+  }
+  async function check() {
+    if (!isSignedIn()) { show(''); return; }
+    const { ok, j } = await post('/rest/v1/rpc/research_access', {}, AUTH.accessToken);
+    if (ok && j && (j.viewer || j.editor)) { hide(); return; }
+    if (typeof fetchEditors === 'function') { try { await fetchEditors(); } catch (e) {} }
+    if (typeof isAuthorizedEditor === 'function' && isAuthorizedEditor()) { hide(); return; }
+    show('Signed in as ' + ((j && j.email) || AUTH.email || 'this account') + ', which is not a team account. Use your point2web.com or liftiq.com email.');
+    $('gate-out').hidden = false; $('gate-pass').hidden = true;
+  }
+  let email = '';
+  $('gate-form').onsubmit = async e => {
+    e.preventDefault(); email = $('gate-email').value.trim().toLowerCase(); if (!email) return;
+    msg('Sending the code…');
+    const { ok, j } = await post('/auth/v1/otp', { email, create_user: true });
+    if (!ok) { msg((j && (j.msg || j.error_description || j.message)) || 'Could not send the code.'); return; }
+    $('gate-form').hidden = true; $('gate-verify').hidden = false; msg('Enter the 6-digit code from the email sent to ' + email + '.'); $('gate-code').focus();
+  };
+  $('gate-verify').onsubmit = async e => {
+    e.preventDefault(); const token = $('gate-code').value.trim(); if (!token) return;
+    msg('Checking…');
+    const { ok, j } = await post('/auth/v1/verify', { type: 'email', email, token });
+    if (!ok || !j || !j.access_token) { msg((j && (j.msg || j.error_description || j.message)) || 'Wrong code.'); return; }
+    AUTH = { accessToken: j.access_token, refreshToken: j.refresh_token, expiresAt: Date.now() + (j.expires_in || 3600) * 1000, email: (j.user && j.user.email) || email, userId: j.user && j.user.id };
+    saveAuth(); location.reload();
+  };
+  $('gate-pass').onclick = () => { hide(); if (typeof openSignIn === 'function') openSignIn(); };
+  $('gate-out').onclick = () => { if (typeof signOut === 'function') signOut(); location.reload(); };
+  // a password sign-in (editors) reloads the page through the gate
+  const _signIn = window.signIn; if (typeof _signIn === 'function') window.signIn = async function () { await _signIn.apply(this, arguments); if (isSignedIn()) location.reload(); else show(''); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check); else check();
+})();
 </script>
 </body>
 </html>
